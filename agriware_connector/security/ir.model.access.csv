@@ -1,2 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_agriware_connection_admin,agriware.connection.admin,model_agriware_connection,base.group_system,1,1,1,1
+access_agriware_api_key_admin,agriware.api.key.admin,model_agriware_api_key,agriware_connector.group_agriware_administrator,1,1,1,0
+access_agriware_api_key_generate_wizard_admin,agriware.api.key.generate.wizard.admin,model_agriware_api_key_generate_wizard,agriware_connector.group_agriware_administrator,1,1,1,1

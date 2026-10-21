@@ -4,3 +4,4 @@ from . import test_authorization
 from . import test_catalog_endpoints
 from . import test_receipts
 from . import test_dispatches
+from . import test_api_keys

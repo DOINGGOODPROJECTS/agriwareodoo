@@ -52,4 +52,11 @@
 
     </record>
 
+    <!-- Each company only ever sees and manages its own API keys. -->
+    <record id="rule_agriware_api_key_company" model="ir.rule">
+        <field name="name">AgriWare API Key: multi-company</field>
+        <field name="model_id" ref="model_agriware_api_key"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
 </odoo>

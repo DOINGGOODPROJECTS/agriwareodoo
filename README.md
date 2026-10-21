@@ -14,6 +14,9 @@ The project is designed for agribusinesses, particularly those operating in Côt
 - Stock dispatch creation and validation
 - API key authentication
 - Role-based API access control
+- Self-service API key management (generate, name, set an expiration or make
+  permanent, view status, and revoke keys directly from the AgriWare
+  Connector menu, without needing Odoo System Administrator access)
 
 ## Architecture
 
@@ -144,7 +147,22 @@ Include the API key in the HTTP Authorization header:
 Authorization: Bearer YOUR_API_KEY
 ```
 
-The authenticated Odoo user must belong to the AgriWare API User security group or a group that implies it. See [docs/API.md](docs/API.md) for how to generate a key and configure an integration user.
+The authenticated Odoo user must belong to the AgriWare API User security group or a group that implies it.
+
+### Generating a key
+
+Any user in the **AgriWare Administrator** group can generate and manage API keys directly,
+without needing Odoo System Administrator access:
+
+1. Go to **AgriWare Connector → API Management → Generate API Key**.
+2. Enter an integration name (e.g. "Main Warehouse Integration").
+3. Choose an expiration date, or check **Never Expires**.
+4. Click **Generate**. The key is shown once — copy it immediately; it cannot be retrieved again.
+
+Manage existing keys under **AgriWare Connector → API Management → API Keys**: view creation
+date, expiration, and status (Active / Expired / Revoked), and revoke a key at any time. A
+revoked or expired key stops authenticating immediately. See [docs/API.md](docs/API.md) for the
+full design and security model behind this.
 
 ## Security
 
@@ -157,6 +175,8 @@ The current implementation includes:
 - Company-scoped lookups for warehouses, partners, and products
 - Transaction-scoped advisory locking to prevent duplicate receipts/dispatches from concurrent requests with the same external reference
 - Reference-prefix scoping (`AGRIWARE-RCPT-` / `AGRIWARE-DISP-`) so the validate endpoints cannot confirm stock operations that were not created by AgriWare
+- Self-service API key management restricted to the AgriWare Administrator group, with per-company record rules so one company can never view or revoke another company's keys
+- API keys are never stored or displayed in plaintext after creation (only a salted hash is kept, matching Odoo's own API key storage); revoked and expired keys are rejected at authentication time, enforced by Odoo core, not by this module
 - Environment-based database credentials
 - Git exclusions for credentials and database backups
 

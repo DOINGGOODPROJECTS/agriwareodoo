@@ -35,6 +35,9 @@ class AgriwareApiCommon(HttpCase):
         })
 
         api_group = cls.env.ref("agriware_connector.group_agriware_api_user")
+        admin_group = cls.env.ref(
+            "agriware_connector.group_agriware_administrator"
+        )
         internal_group = cls.env.ref("base.group_user")
 
         cls.api_user = cls.env["res.users"].create({
@@ -47,6 +50,14 @@ class AgriwareApiCommon(HttpCase):
             "name": "AgriWare Plain Test User",
             "login": "agriware_plain_test_user",
             "group_ids": [(6, 0, [internal_group.id])],
+        })
+
+        cls.admin_user = cls.env["res.users"].create({
+            "name": "AgriWare Administrator Test User",
+            "login": "agriware_admin_test_user",
+            "group_ids": [(6, 0, [internal_group.id, admin_group.id])],
+            "company_ids": [(6, 0, [cls.env.company.id])],
+            "company_id": cls.env.company.id,
         })
 
         api_keys = cls.env["res.users.apikeys"]

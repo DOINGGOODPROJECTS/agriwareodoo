@@ -51,7 +51,6 @@
         id="menu_agriware_root"
         name="AgriWare Connector"
         sequence="50"
-        groups="base.group_system"
     />
 
     <menuitem

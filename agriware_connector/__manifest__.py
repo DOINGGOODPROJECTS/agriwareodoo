@@ -26,6 +26,7 @@ between AgriWare and Odoo.
         "security/agriware_security.xml",
         "security/ir.model.access.csv",
         "views/connection_views.xml",
+        "views/api_key_views.xml",
     ],
     "installable": True,
     "application": False,

@@ -18,11 +18,20 @@
 
     <h2 style="font-size: 20px;">What it does</h2>
     <p>
-        AgriWare Connector exposes a REST API on top of Odoo's Inventory app so an external AgriWare
-        warehouse management system can read product, warehouse, and stock data, and create and
-        validate incoming receipts and outgoing dispatches, without a human re-keying anything into
-        Odoo. AgriWare remains a standalone application; this module is the bridge between the two
-        systems.
+        AgriWare Connector is a free, open-source Odoo 19 application that lets businesses connect
+        their existing, compatible warehouse management system (WMS) — one built or adapted to use
+        this module's documented REST API — to Odoo Inventory. It exposes that API so the WMS can
+        read product, warehouse, and stock data, and create and validate incoming receipts and
+        outgoing dispatches, without a human re-keying anything into Odoo. AgriWare remains a
+        standalone application; this module is the bridge between the two systems.
+    </p>
+    <p>
+        Businesses generate, manage, revoke, and replace their own API keys directly inside
+        AgriWare Connector — no AgriWare developer or external administrator involvement needed to
+        get connected. Each key can be given an expiration date or left to remain valid until
+        manually revoked. Using the generated credentials and the documented REST API, businesses
+        can configure a compatible WMS independently; not every warehouse system is automatically
+        compatible — it must support, or be adapted to support, this module's API.
     </p>
 
     <h2 style="font-size: 20px;">Key features</h2>
@@ -30,9 +39,22 @@
         <li>REST API for products, warehouses, and on-hand inventory</li>
         <li>Create and validate stock receipts (incoming deliveries)</li>
         <li>Create and validate stock dispatches (outgoing deliveries)</li>
-        <li>Odoo API key authentication (Bearer token)</li>
+        <li>Self-service API key management: generate, name, set an expiration or make permanent, view status, revoke, and replace keys, without needing Odoo System Administrator access</li>
         <li>Dedicated role-based access group for external integrations</li>
         <li>Concurrency-safe duplicate protection on receipt/dispatch creation</li>
+    </ul>
+
+    <h2 style="font-size: 20px;">Optional professional services (paid)</h2>
+    <p>
+        AgriWare Connector itself is, and remains, free and open-source. For businesses that want
+        help going further, AgriWare separately offers optional paid services:
+    </p>
+    <ul>
+        <li>Custom WMS integration for systems not natively compatible with this API</li>
+        <li>Installation and configuration</li>
+        <li>Development of WMS adapters</li>
+        <li>Technical support and maintenance</li>
+        <li>Custom development</li>
     </ul>
 
     <h2 style="font-size: 20px;">Screenshots</h2>
@@ -81,10 +103,10 @@
     <h2 style="font-size: 20px;">Data &amp; integration</h2>
     <p>
         This module does not send any data anywhere on its own. It only responds to requests from
-        whichever external system an Odoo administrator explicitly authorizes with an Odoo API key,
-        and only for the data categories documented above (products, warehouses, inventory,
-        receipts, and dispatches). No data is shared with AgriWare Connector's authors or any
-        third party.
+        whichever external system an authorized business user explicitly connects by generating an
+        API key, and only for the data categories documented above (products, warehouses,
+        inventory, receipts, and dispatches). No data is shared with AgriWare Connector's authors
+        or any third party.
     </p>
 
     <h2 style="font-size: 20px;">Documentation</h2>

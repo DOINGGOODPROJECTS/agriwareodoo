@@ -10,14 +10,13 @@ for every endpoint.
 External WMS  --(HTTPS + API key)-->  AgriWare Connector  --(Odoo ORM)-->  Odoo 19  -->  PostgreSQL
 ```
 
-1. An Odoo administrator creates a dedicated Odoo user for the external WMS integration (not a
-   human login) and adds it to the **AgriWare API User** security group (or a group that implies
-   it, such as **AgriWare Administrator**).
-2. The administrator generates an API key for that user: **Settings → Users & Companies → Users →
-   (select the integration user) → Account Security tab → New API Key**. Odoo only displays the
-   key once; store it in the external system's secret manager, never in source control.
-3. The external WMS sends that key as a Bearer token on every request to a protected endpoint.
-4. The connector translates WMS actions into standard Odoo stock operations
+1. A user in the **AgriWare Administrator** group generates an API key from
+   **AgriWare Connector → API Management → Generate API Key** — no Odoo System Administrator
+   access is required. See [Self-service API key management](#self-service-api-key-management)
+   below. Odoo only displays the key once; store it in the external system's secret manager, never
+   in source control.
+2. The external WMS sends that key as a Bearer token on every request to a protected endpoint.
+3. The connector translates WMS actions into standard Odoo stock operations
    (`stock.picking` / `stock.move`): an incoming delivery becomes a **receipt**, an outgoing
    delivery becomes a **dispatch**. Both follow a two-step lifecycle — **create** (draft) then
    **validate** (confirms the operation in Odoo's stock workflow).
@@ -51,6 +50,35 @@ Content-Type: text/html
 
 Clients must therefore check the HTTP status code first and only attempt to parse the body as
 JSON when the status code indicates a controller-level response (see below).
+
+## Self-service API key management
+
+Businesses manage their own API keys entirely inside AgriWare Connector — no AgriWare developer
+or external Odoo System Administrator involvement is required.
+
+**Generate a key**: **AgriWare Connector → API Management → Generate API Key**. Provide an
+integration name, then either set an expiration date or check **Never Expires**. The raw key is
+shown exactly once in a dialog; it cannot be retrieved again afterward. Only a salted hash is ever
+stored, matching how Odoo stores all API keys.
+
+**Manage keys**: **AgriWare Connector → API Management → API Keys** lists every key for your
+company — name, creation date, expiration, and status (`Active`, `Expired`, or `Revoked`) — with a
+**Revoke** action. Revocation is immediate: the underlying Odoo API key record is deleted, so the
+very next request using that key is rejected at the authentication layer described above, before
+any AgriWare controller code runs. Multiple keys can be created for different WMS integrations
+(e.g. separate keys per warehouse); they share one underlying integration identity per company but
+are independently revocable.
+
+**Who can do this**: only users in the **AgriWare Administrator** group. This is a narrower
+requirement than Odoo's own built-in self-service key management (which is normally limited to
+managing your own keys, and reserves "never expires" for System Administrators) — AgriWare
+Connector's generate/revoke actions run with elevated privileges internally, but only after
+verifying the caller holds AgriWare Administrator for the specific company the key belongs to.
+Record rules additionally prevent one company's administrators from ever seeing or revoking
+another company's keys in a multi-company database.
+
+**Not a REST endpoint**: key management is an Odoo backend UI feature, not part of the public
+REST surface documented below — it isn't something the external WMS itself calls.
 
 ## Authorization
 
