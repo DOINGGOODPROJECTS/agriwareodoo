@@ -45,6 +45,26 @@
         <li>Concurrency-safe duplicate protection on receipt/dispatch creation</li>
     </ul>
 
+    <h2 style="font-size: 20px;">Security and Permissions</h2>
+    <ul>
+        <li>Self-service API key generation: an authorized business user creates, names, and manages API keys directly inside AgriWare Connector — no developer or external administrator involvement is needed</li>
+        <li>Authorized user access: only users in the <strong>AgriWare Administrator</strong> group can generate, revoke, or replace API keys; only users in the <strong>AgriWare API User</strong> group (or a group that implies it) can call the REST API itself</li>
+        <li>API key expiration and revocation: a key can be given an expiration date or left to remain valid until manually revoked; revocation takes effect immediately, enforced by Odoo's own API key infrastructure</li>
+        <li>Bearer-token authentication: every protected endpoint requires a valid Odoo API key sent as an <code>Authorization: Bearer</code> header</li>
+        <li>Multi-company security controls: API key records are isolated per company by record rules, so one company's administrators can never view or revoke another company's keys</li>
+        <li>Secure communication recommended: deploy behind HTTPS in any environment beyond local development, since Bearer tokens sent over plain HTTP are visible on the network path</li>
+    </ul>
+
+    <h2 style="font-size: 20px;">Known Limitations</h2>
+    <ul>
+        <li>The external WMS must support the documented REST API, or use an adapter, to integrate — not every warehouse system is automatically compatible</li>
+        <li>No automatic or scheduled synchronization: every request is initiated by the external WMS</li>
+        <li>Lot/serial-tracked stock operations are not currently supported</li>
+        <li>Partial receipt and dispatch processing is not currently supported; quantities must match exactly</li>
+        <li>Warehouse-specific access controls are not currently implemented; access is scoped by company only</li>
+        <li>Pagination is not currently supported on list endpoints</li>
+    </ul>
+
     <h2 style="font-size: 20px;">Optional professional services (paid)</h2>
     <p>
         AgriWare Connector itself is, and remains, free and open-source. For businesses that want

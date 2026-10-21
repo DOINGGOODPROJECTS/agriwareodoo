@@ -16,6 +16,9 @@ between AgriWare and Odoo.
     "author": "AgriWare",
     "website": "https://github.com/DOINGGOODPROJECTS/agriwareodoo",
     "license": "LGPL-3",
+    "images": [
+        "static/description/apps_listing_screenshot.png",
+    ],
     "depends": [
         "base",
         "connector",
