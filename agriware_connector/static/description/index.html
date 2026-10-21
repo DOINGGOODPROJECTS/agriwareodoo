@@ -10,10 +10,11 @@
 
     <h2 style="font-size: 20px;">Who it's for</h2>
     <p>
-        Agribusinesses — particularly cooperatives, input distributors, and processors in
-        Côte d'Ivoire and other African markets — that run an AgriWare warehouse deployment
-        alongside Odoo and need the two systems to stay in sync automatically, instead of
-        re-entering receipts and dispatches by hand in both places.
+        Agricultural cooperatives, agribusinesses, processors, and input distributors — originally
+        built for businesses operating in Côte d'Ivoire and other African markets, though nothing
+        restricts it to any particular region — that already use Odoo 19 and run a compatible
+        external warehouse management system (WMS) they need to keep in sync with Odoo Inventory,
+        instead of re-entering receipts and dispatches by hand in both places.
     </p>
 
     <h2 style="font-size: 20px;">What it does</h2>
@@ -81,7 +82,19 @@
     </p>
 
     <h2 style="font-size: 20px;">How it fits together</h2>
-    <pre style="background: #f6f6f6; padding: 16px; border-radius: 6px; overflow-x: auto;">External Warehouse Management Systems
+    <pre style="background: #f6f6f6; padding: 16px; border-radius: 6px; overflow-x: auto;">Business / Authorized Odoo User
+                |
+                v
+        AgriWare Connector
+                |
+                v
+         API Management
+                |
+                v
+       Generate API Key
+                |
+                v
+         External WMS
                 |
                 | REST API
                 v
@@ -89,7 +102,7 @@
                 |
                 | Odoo ORM
                 v
-             Odoo 19
+       Odoo 19 Inventory
                 |
                 v
             PostgreSQL</pre>

@@ -1,52 +1,140 @@
 # AgriWare Connector
 
-AgriWare Connector is an open-source Odoo 19 module that enables agricultural warehouse management systems (WMS) to exchange information with Odoo through a standardized REST API.
+AgriWare Connector is a free, open-source Odoo 19 application that enables businesses to connect
+a compatible external Warehouse Management System (WMS) to Odoo Inventory. It exposes a
+standardized REST API that an external WMS can use to exchange product, warehouse, and inventory
+information, and to create and validate stock receipts and dispatches.
 
-The project is designed for agribusinesses, particularly those operating in Côte d'Ivoire and other African markets.
+**AgriWare Connector is not itself a warehouse management system.** It does not manage racking,
+picking routes, barcode scanning hardware, or any other WMS-side operation — it is the integration
+layer between an existing WMS and Odoo's Inventory app.
 
-## Features
+## Table of contents
+
+1. [Project overview](#project-overview)
+2. [Who it is for](#who-it-is-for)
+3. [Key features](#key-features)
+4. [How AgriWare Connector works](#how-agriware-connector-works)
+5. [System architecture](#system-architecture)
+6. [Installation](#installation)
+7. [API key management](#api-key-management)
+8. [Connecting an existing WMS](#connecting-an-existing-wms)
+9. [Supported API operations](#supported-api-operations)
+10. [Security](#security)
+11. [Free software and paid services](#free-software-and-paid-services)
+12. [Known limitations](#known-limitations)
+13. [Development and testing](#development-and-testing)
+14. [Contributing](#contributing)
+15. [License](#license)
+16. [Professional services](#professional-services)
+
+## Project overview
+
+AgriWare Connector integrates an existing, compatible WMS with Odoo 19's Inventory app through a
+REST API. The external WMS calls this API to read Odoo's product, warehouse, and stock data, and
+to push incoming receipts and outgoing dispatches into Odoo's standard stock workflow
+(`stock.picking` / `stock.move`). Odoo itself never calls out to the WMS — every request in this
+integration is initiated by the external system.
+
+## Who it is for
+
+- Agricultural cooperatives
+- Agribusinesses
+- Agricultural processors
+- Agricultural input distributors
+- Warehouse operators
+- Businesses already using Odoo 19
+- Businesses with existing external WMS software
+
+The project originated for agribusinesses operating in Côte d'Ivoire and other African markets,
+but nothing in the module restricts it to any particular country or region.
+
+## Key features
+
+All of the following are implemented and covered by the automated test suite:
 
 - REST API integration with Odoo 19
 - Product information retrieval
 - Warehouse information retrieval
-- Inventory and stock visibility
-- Stock receipt creation and validation
-- Stock dispatch creation and validation
-- API key authentication
-- Role-based API access control
-- Self-service API key management (generate, name, set an expiration or make
-  permanent, view status, and revoke keys directly from the AgriWare
-  Connector menu, without needing Odoo System Administrator access)
+- Inventory information retrieval
+- Stock receipt creation
+- Stock receipt validation
+- Stock dispatch creation
+- Stock dispatch validation
+- Bearer-token authentication (Odoo API keys)
+- Self-service API key management, directly inside Odoo:
+  - API key generation
+  - API key expiration (a chosen date, or none)
+  - Never-expiring API keys
+  - API key revocation
+  - API key replacement
+  - Multiple API keys per company, for different WMS integrations
+- Role-based access control (`AgriWare API User`, `AgriWare Administrator` groups)
+- Multi-company security controls (record rules scope API keys to their own company)
+- Duplicate transaction protection (advisory-locked, concurrency-safe)
 
-## Architecture
+## How AgriWare Connector works
 
-External warehouse management systems communicate with AgriWare Connector through its REST API.
+**Step 1.** The business installs AgriWare Connector inside its Odoo 19 environment.
 
-```text
-External Warehouse Management Systems
-                |
-                | REST API
-                v
-        AgriWare Connector
-                |
-                | Odoo ORM
-                v
-             Odoo 19
-                |
-                v
-            PostgreSQL
+**Step 2.** An authorized business user (a member of the **AgriWare Administrator** group — see
+[API key management](#api-key-management)) opens **AgriWare Connector → API Management**.
+
+**Step 3.** The user generates an API key, giving it an integration name (e.g. "Main Warehouse
+Integration"). Multiple keys can be generated, one per WMS integration if needed.
+
+**Step 4.** The user chooses an expiration date for the key, or selects **Never Expires**.
+
+**Step 5.** The generated key is displayed exactly once, in a dialog; the business copies it
+immediately — it cannot be retrieved again afterward, since only a salted hash is stored.
+
+**Step 6.** The business configures its existing WMS with two values: the Odoo instance's API base
+URL, and the generated API key.
+
+**Step 7.** The external WMS calls the AgriWare Connector REST API, authenticating every request
+with that key.
+
+**Step 8.** AgriWare Connector processes each request using Odoo's ORM and Odoo's own security
+permissions (the group and company checks described in [Security](#security)) — every read or
+write goes through the same access control any other Odoo client would be subject to.
+
+**Step 9.** The business can revoke a key immediately, or generate a replacement, at any time —
+without contacting AgriWare's developers.
+
+The external WMS must implement the AgriWare REST API specification documented in
+[docs/API.md](docs/API.md), or use a custom adapter (see
+[Free software and paid services](#free-software-and-paid-services)).
+
+## System architecture
+
+```mermaid
+flowchart TD
+    A[Business / Authorized Odoo User] --> B[AgriWare Connector]
+    B --> C[API Management]
+    C --> D[Generate API Key]
+    D --> E[External WMS]
+    E -->|REST API| F[AgriWare Connector]
+    F -->|Odoo ORM| G[Odoo 19 Inventory]
+    G --> H[(PostgreSQL)]
 ```
 
-## Requirements
+The external WMS initiates every REST API request shown above; AgriWare Connector never calls out
+to the WMS. All data ultimately lives in Odoo's own PostgreSQL database — AgriWare Connector adds
+no separate datastore.
+
+## Installation
+
+### Requirements
 
 - Odoo 19
 - PostgreSQL 16
-- Docker and Docker Compose
-- Python packages: openupgradelib and cachetools
+- Docker and Docker Compose (for the development environment described below)
+- Python packages: `openupgradelib`, `cachetools` (installed automatically by the provided
+  `Dockerfile`)
 
-### OCA Dependencies
+### OCA dependencies
 
-AgriWare Connector uses the following Odoo Community Association modules:
+AgriWare Connector depends on the following Odoo Community Association modules:
 
 | Module | Version | Repository | Pinned commit |
 |---|---|---|---|
@@ -55,18 +143,21 @@ AgriWare Connector uses the following Odoo Community Association modules:
 | connector | 19.0.1.0.0 | https://github.com/OCA/connector | `cce76545ea56b85864fde9a1afb69748bc766e99` |
 | queue_job | 19.0.2.1.6 | https://github.com/OCA/queue | `da2664795eb525698f93dfdd63f6ba5c4c9fccba` |
 
-These are the exact Git revisions verified against the files installed in the current development environment (byte-for-byte identical). Use the pinned commits below rather than tracking the `19.0` branch directly, since upstream can advance independently of this project.
+These are declared as dependencies of the `connector` module chain. AgriWare Connector's own code
+does not currently use their job-queue or synchronization features (see
+[Known limitations](#known-limitations)). Use the pinned commits above rather than tracking the
+`19.0` branch directly, since upstream can advance independently of this project.
 
-## Installation
+### Installing from source
 
-### 1. Clone the Repository
+**1. Clone the repository**
 
 ```bash
 git clone git@github.com:DOINGGOODPROJECTS/agriwareodoo.git
 cd agriwareodoo
 ```
 
-### 2. Configure Environment Variables
+**2. Configure environment variables**
 
 ```bash
 cp .env.example .env
@@ -75,9 +166,7 @@ nano .env
 
 Replace the placeholder password with your own PostgreSQL password.
 
-### 3. Install OCA Dependencies
-
-Clone the upstream repositories and check out the pinned commits listed above, then copy only the needed module directories into the project root:
+**3. Install the OCA dependencies**
 
 ```bash
 git clone https://github.com/OCA/connector.git /tmp/oca-connector
@@ -93,7 +182,8 @@ cp -r /tmp/oca-queue/queue_job ./queue_job
 rm -rf /tmp/oca-connector /tmp/oca-queue
 ```
 
-This results in the following module directories at the project root (all excluded from version control by `.gitignore`, since they are third-party dependencies, not part of this project):
+This results in the following directories at the project root (all excluded from version control
+by `.gitignore`, since they are third-party dependencies, not part of this project):
 
 ```text
 component/
@@ -102,26 +192,118 @@ connector/
 queue_job/
 ```
 
-### 4. Start Odoo
+**4. Start Odoo**
 
 ```bash
 docker compose up -d --build
 ```
 
-Open Odoo at:
+Open Odoo at `http://localhost:8069`.
 
-http://localhost:8069
-
-### 5. Install AgriWare Connector
+### Module activation
 
 1. Log in to Odoo.
 2. Activate developer mode.
-3. Navigate to Apps.
+3. Navigate to **Apps**.
 4. Update the Apps List.
-5. Search for AgriWare Connector.
+5. Search for **AgriWare Connector**.
 6. Install the module.
 
-## API Endpoints
+### Required user permissions
+
+Installing the module does not, by itself, grant anyone access to the API. An administrator with
+Odoo's own **Settings** access must assign the **AgriWare Administrator** group (Settings → Users
+& Companies → Users → Access Rights) to whichever business user(s) should manage API keys. See
+[API key management](#api-key-management) for what that group can do.
+
+## API key management
+
+### Who can generate keys
+
+Only users in the **AgriWare Administrator** group. This is distinct from the **AgriWare API
+User** group, which is the group the API key's underlying identity needs in order to call the
+REST endpoints — a human never needs to be in that group themselves.
+
+### How keys are generated
+
+**AgriWare Connector → API Management → Generate API Key**, then:
+1. Enter an integration name.
+2. Choose an expiration date, or check **Never Expires**.
+3. Click **Generate**.
+
+The key is shown exactly once, immediately after generation, in a dialog box. Copy it right away —
+Odoo cannot show it to you again.
+
+### How expiration works
+
+If an expiration date is set, the key stops authenticating automatically once that date passes —
+enforced by Odoo's own API key infrastructure at the database layer, not by application code that
+could be bypassed.
+
+### Never Expires
+
+A key can instead be created with no expiration date, remaining valid until someone explicitly
+revokes it.
+
+### How to revoke keys
+
+From **AgriWare Connector → API Management → API Keys**, click **Revoke** on any key. This takes
+effect immediately: the underlying credential is deleted, and the very next request using that key
+is rejected.
+
+### How to replace expired or revoked keys
+
+Click **Create New** on an expired or revoked key's row. This opens the generate wizard pre-filled
+with that key's integration name and expiration policy, so replacing a key doesn't mean re-typing
+everything from scratch.
+
+### Multiple keys for different WMS applications
+
+Each company can hold any number of API keys — for example, one per warehouse or per WMS
+integration. They share one underlying integration identity per company but are independently
+named, timed, and revocable.
+
+### Security recommendations
+
+- Treat every generated key as a secret: store it in the external system's secret manager, never
+  in source control or plaintext configuration files.
+- Prefer an expiration date over Never Expires unless the integration genuinely needs a
+  long-lived credential.
+- Revoke a key immediately if you suspect it has leaked.
+- Only grant the **AgriWare Administrator** group to business users who should be trusted to
+  manage API credentials — see [Security](#security).
+
+Full technical and security details are in [docs/API.md](docs/API.md).
+
+## Connecting an existing WMS
+
+Once you have a generated key (see [API key management](#api-key-management)):
+
+```bash
+curl -s YOUR_ODOO_URL/agriware/api/v1/products \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+```json
+{
+  "status": "success",
+  "count": 2,
+  "products": [
+    {"id": 14, "name": "Urea 50kg Bag", "default_code": "FERT-UREA-50", "barcode": "6161100000012", "active": true},
+    {"id": 15, "name": "Maize Seed 25kg Bag", "default_code": "SEED-MAIZE-25", "barcode": "", "active": true}
+  ]
+}
+```
+
+The WMS should expect this response pattern — `{"status": "success", ...}` or
+`{"status": "error", "message": "..."}` — on every endpoint, and must be able to issue an
+`Authorization: Bearer <key>` header on each request. See [docs/API.md](docs/API.md) for the
+complete request/response contract of every endpoint, including receipt and dispatch creation.
+
+Some WMS platforms will need custom integration development to speak this API — see
+[Free software and paid services](#free-software-and-paid-services).
+
+## Supported API operations
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -134,66 +316,122 @@ http://localhost:8069
 | POST | `/agriware/api/v1/dispatches` | Create stock dispatch |
 | POST | `/agriware/api/v1/dispatches/{id}/validate` | Validate dispatch |
 
-Full request/response schemas, authentication details, and error responses for every endpoint
-are documented in [docs/API.md](docs/API.md).
-
-## Authentication
-
-Protected endpoints require an Odoo API key.
-
-Include the API key in the HTTP Authorization header:
-
-```text
-Authorization: Bearer YOUR_API_KEY
-```
-
-The authenticated Odoo user must belong to the AgriWare API User security group or a group that implies it.
-
-### Generating a key
-
-Any user in the **AgriWare Administrator** group can generate and manage API keys directly,
-without needing Odoo System Administrator access:
-
-1. Go to **AgriWare Connector → API Management → Generate API Key**.
-2. Enter an integration name (e.g. "Main Warehouse Integration").
-3. Choose an expiration date, or check **Never Expires**.
-4. Click **Generate**. The key is shown once — copy it immediately; it cannot be retrieved again.
-
-Manage existing keys under **AgriWare Connector → API Management → API Keys**: view creation
-date, expiration, and status (Active / Expired / Revoked), and revoke a key at any time. A
-revoked or expired key stops authenticating immediately. See [docs/API.md](docs/API.md) for the
-full design and security model behind this.
+Full request/response schemas, authentication details, and error responses for every endpoint are
+documented in [docs/API.md](docs/API.md).
 
 ## Security
 
-The current implementation includes:
+- **API key authentication**: every protected endpoint requires a Bearer token that is a real
+  Odoo API key.
+- **Access control**: the authenticated user must additionally belong to the **AgriWare API User**
+  group (or a group that implies it) — a valid key alone is not sufficient.
+- **Company restrictions**: warehouses, partners, and products are looked up scoped to the caller's
+  companies; API key records are further isolated per-company by record rules, so one company's
+  administrators can never see or revoke another company's keys.
+- **API key expiration and revocation**: enforced by Odoo's own API key infrastructure at
+  authentication time, independent of this module's own code.
+- **Secure credential storage**: API keys are stored as a salted hash only, never in plaintext,
+  matching Odoo's own design; the `agriware.connection` model's manually-entered API key field is
+  similarly restricted to Odoo System Administrators.
+- **HTTPS recommended**: deploy behind TLS in any environment that isn't purely local development —
+  Bearer tokens sent over plain HTTP are visible to anyone on the network path.
+- **Duplicate transaction protection**: a PostgreSQL transaction-scoped advisory lock serializes
+  concurrent receipt/dispatch creation requests sharing the same external reference.
 
-- Bearer-token authentication
-- AgriWare-specific API access permissions
-- HTTP 401 responses for unauthenticated requests
-- HTTP 403 responses for users without AgriWare API permissions
-- Company-scoped lookups for warehouses, partners, and products
-- Transaction-scoped advisory locking to prevent duplicate receipts/dispatches from concurrent requests with the same external reference
-- Reference-prefix scoping (`AGRIWARE-RCPT-` / `AGRIWARE-DISP-`) so the validate endpoints cannot confirm stock operations that were not created by AgriWare
-- Self-service API key management restricted to the AgriWare Administrator group, with per-company record rules so one company can never view or revoke another company's keys
-- API keys are never stored or displayed in plaintext after creation (only a salted hash is kept, matching Odoo's own API key storage); revoked and expired keys are rejected at authentication time, enforced by Odoo core, not by this module
-- Environment-based database credentials
-- Git exclusions for credentials and database backups
+See [Known limitations](#known-limitations) for gaps not yet addressed. Additional security
+hardening is recommended before production deployment.
 
-See [docs/API.md](docs/API.md#known-limitations) for known limitations (no per-warehouse access
-control, no pagination, no partial receipts/dispatches). Additional security hardening is
-required before production deployment.
+## Free software and paid services
 
-## Project Status
+AgriWare Connector is free and open-source (LGPL-3.0) — no mandatory licensing or subscription
+fee, ever.
 
-AgriWare Connector is under active development.
+**Free, included with the software:**
 
-Its initial REST API endpoints and security controls have been implemented and tested locally with Odoo 19.
+- Download and installation of the open-source module
+- API key generation and management
+- Access to all supported REST API functionality
+- Self-service integration with compatible WMS software
+
+**Optional, paid professional services** (separate from the software itself):
+
+- Custom WMS integration for systems not natively compatible with this API
+- Development of WMS adapters
+- Installation and configuration
+- Technical support and maintenance
+- Custom feature development
+
+These services are entirely optional. Businesses only pay AgriWare if they choose to use one of
+them; the software itself remains free either way.
+
+## Known limitations
+
+Verified against the current implementation:
+
+- No pagination: the `products`, `warehouses`, and `inventory` list endpoints hard-cap at 100
+  records, with no offset/cursor parameter.
+- No per-warehouse access control: any user in the AgriWare API User group can act on any
+  warehouse within their allowed companies.
+- Partial receipts and partial dispatches are not supported; quantities must match exactly.
+- Lot/serial-tracked products are explicitly rejected by dispatch validation. Receipt validation
+  has no equivalent explicit check — this is a known inconsistency, not a verified-safe code path.
+- Multiple move lines for the same product on one receipt are not supported.
+- No automatic or scheduled synchronization: every request is initiated by the external WMS: there
+  is no polling, cron job, or scheduled task inside this module.
+- No bidirectional synchronization: AgriWare Connector never calls out to the WMS. All
+  communication is WMS-initiated.
+- No built-in WMS-specific adapters: the module exposes one generic REST API; translating that to
+  a WMS's own native protocol, where needed, is custom integration work (see
+  [Free software and paid services](#free-software-and-paid-services)).
+- The `agriware.connection` model (**AgriWare Connector → WMS Connections**, System Administrators
+  only) is a record-keeping screen for an external WMS endpoint and credential; its **Test
+  Connection** button is not yet implemented and raises a "not implemented yet" message. It is not
+  currently wired into the REST API flow described in this document.
+
+## Development and testing
+
+The development environment is Docker Compose-based (Odoo 19 + PostgreSQL 16; see
+[Installation](#installation)).
+
+**Running tests safely.** Automated tests must never run against your real data. Create a
+throwaway database, run the test suite against it, then drop it:
+
+```bash
+docker compose exec odoo bash -c \
+  'odoo -d throwaway_test_db --db_host=db --db_user=odoo --db_password="$PASSWORD" \
+   --http-port=8070 -i agriware_connector --test-enable --test-tags /agriware_connector \
+   --stop-after-init --log-level=test'
+```
+
+Then drop the database when done:
+
+```bash
+docker compose exec db psql -U odoo -d postgres -c "DROP DATABASE throwaway_test_db;"
+```
+
+The test suite uses Odoo's `HttpCase` to make real HTTP requests against the running test server,
+covering authentication, authorization, catalog endpoints, receipt/dispatch create and validate
+flows, and the full self-service API key lifecycle (generation, expiration, revocation,
+replacement, and company-level isolation).
+
+## Contributing
+
+This project is developed in the open on GitHub:
+https://github.com/DOINGGOODPROJECTS/agriwareodoo
+
+To contribute: open an issue describing the change you'd like to make or the bug you've found,
+fork the repository, and open a pull request against `main`. Please run the automated test suite
+against a throwaway database (see above) before submitting.
 
 ## License
 
-LGPL-3.0
+LGPL-3.0. See [LICENSE](LICENSE).
 
-## GitHub Repository
+## Professional services
+
+For custom WMS integration, installation and configuration help, WMS adapter development,
+technical support, or other custom development (see
+[Free software and paid services](#free-software-and-paid-services)), open an issue on the GitHub
+repository:
 
 https://github.com/DOINGGOODPROJECTS/agriwareodoo
