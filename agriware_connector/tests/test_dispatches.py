@@ -124,3 +124,51 @@ class TestAgriwareDispatches(AgriwareApiCommon):
             ],
         })
         self.assertEqual(response.status_code, 403)
+
+    def test_validate_dispatch_lot_tracked_product_is_rejected(self):
+        created = self._create({
+            "external_reference": "AGRIWARE-DISP-LOT",
+            "warehouse_id": self.warehouse.id,
+            "customer_id": self.partner.id,
+            "products": [
+                {"product_id": self.lot_tracked_product.id, "quantity": 10}
+            ],
+        })
+        self.assertEqual(created.status_code, 201)
+        dispatch_id = created.json()["dispatch_id"]
+
+        response = self._validate(dispatch_id, {
+            "external_reference": "AGRIWARE-DISP-LOT",
+            "dispatched_quantities": [
+                {"product_id": self.lot_tracked_product.id, "quantity": 10}
+            ],
+        })
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(
+            response.json()["message"],
+            "Lot or serial tracking is not supported yet",
+        )
+
+    def test_validate_dispatch_serial_tracked_product_is_rejected(self):
+        created = self._create({
+            "external_reference": "AGRIWARE-DISP-SERIAL",
+            "warehouse_id": self.warehouse.id,
+            "customer_id": self.partner.id,
+            "products": [
+                {"product_id": self.serial_tracked_product.id, "quantity": 1}
+            ],
+        })
+        self.assertEqual(created.status_code, 201)
+        dispatch_id = created.json()["dispatch_id"]
+
+        response = self._validate(dispatch_id, {
+            "external_reference": "AGRIWARE-DISP-SERIAL",
+            "dispatched_quantities": [
+                {"product_id": self.serial_tracked_product.id, "quantity": 1}
+            ],
+        })
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(
+            response.json()["message"],
+            "Lot or serial tracking is not supported yet",
+        )

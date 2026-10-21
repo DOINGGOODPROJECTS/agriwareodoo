@@ -5,3 +5,4 @@ from . import test_catalog_endpoints
 from . import test_receipts
 from . import test_dispatches
 from . import test_api_keys
+from . import test_menu_visibility

@@ -383,10 +383,15 @@ Verified against the current implementation:
 - No built-in WMS-specific adapters: the module exposes one generic REST API; translating that to
   a WMS's own native protocol, where needed, is custom integration work (see
   [Free software and paid services](#free-software-and-paid-services)).
-- The `agriware.connection` model (**AgriWare Connector → WMS Connections**, System Administrators
-  only) is a record-keeping screen for an external WMS endpoint and credential; its **Test
-  Connection** button is not yet implemented and raises a "not implemented yet" message. It is not
-  currently wired into the REST API flow described in this document.
+- Lot/serial-tracked products are rejected consistently on **both** receipt and dispatch
+  validation, with the same `409` error (`"Lot or serial tracking is not supported yet"`),
+  verified by automated tests covering lot-tracked and serial-tracked products on each endpoint.
+- The `agriware.connection` model ("WMS Connections") exists in the codebase but is unused by the
+  current, inbound-only API architecture — the REST API never reads this model. It appears to have
+  been built for a different, outbound direction (Odoo calling out to a WMS) that was never
+  implemented. Its menu and "Test Connection" action are hidden from normal users (reachable only
+  with "Technical Features" enabled in Settings → Users) to avoid advertising functionality that
+  doesn't work; the model, its views, and any existing records are preserved, not deleted.
 
 ## Development and testing
 

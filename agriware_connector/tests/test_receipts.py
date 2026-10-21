@@ -161,3 +161,51 @@ class TestAgriwareReceipts(AgriwareApiCommon):
 
         second = self._validate(receipt_id, payload)
         self.assertEqual(second.status_code, 409)
+
+    def test_validate_receipt_lot_tracked_product_is_rejected(self):
+        created = self._create({
+            "external_reference": "AGRIWARE-RCPT-LOT",
+            "warehouse_id": self.warehouse.id,
+            "supplier_id": self.partner.id,
+            "products": [
+                {"product_id": self.lot_tracked_product.id, "quantity": 10}
+            ],
+        })
+        self.assertEqual(created.status_code, 201)
+        receipt_id = created.json()["receipt_id"]
+
+        response = self._validate(receipt_id, {
+            "external_reference": "AGRIWARE-RCPT-LOT",
+            "received_quantities": [
+                {"product_id": self.lot_tracked_product.id, "quantity": 10}
+            ],
+        })
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(
+            response.json()["message"],
+            "Lot or serial tracking is not supported yet",
+        )
+
+    def test_validate_receipt_serial_tracked_product_is_rejected(self):
+        created = self._create({
+            "external_reference": "AGRIWARE-RCPT-SERIAL",
+            "warehouse_id": self.warehouse.id,
+            "supplier_id": self.partner.id,
+            "products": [
+                {"product_id": self.serial_tracked_product.id, "quantity": 1}
+            ],
+        })
+        self.assertEqual(created.status_code, 201)
+        receipt_id = created.json()["receipt_id"]
+
+        response = self._validate(receipt_id, {
+            "external_reference": "AGRIWARE-RCPT-SERIAL",
+            "received_quantities": [
+                {"product_id": self.serial_tracked_product.id, "quantity": 1}
+            ],
+        })
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(
+            response.json()["message"],
+            "Lot or serial tracking is not supported yet",
+        )

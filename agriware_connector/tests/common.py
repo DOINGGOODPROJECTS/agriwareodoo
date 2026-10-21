@@ -30,6 +30,20 @@ class AgriwareApiCommon(HttpCase):
             "type": "service",
         })
 
+        cls.lot_tracked_product = cls.env["product.product"].create({
+            "name": "AgriWare Lot Tracked Product",
+            "type": "consu",
+            "is_storable": True,
+            "tracking": "lot",
+        })
+
+        cls.serial_tracked_product = cls.env["product.product"].create({
+            "name": "AgriWare Serial Tracked Product",
+            "type": "consu",
+            "is_storable": True,
+            "tracking": "serial",
+        })
+
         cls.partner = cls.env["res.partner"].create({
             "name": "AgriWare Test Partner",
         })

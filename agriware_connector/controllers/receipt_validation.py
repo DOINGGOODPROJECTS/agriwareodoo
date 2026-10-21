@@ -224,6 +224,15 @@ class AgriwareReceiptValidationAPI(http.Controller):
             for move in moves:
                 quantity = quantities[move.product_id.id]
 
+                # Matches the same guard on dispatch validation: lot/serial
+                # assignment isn't supported by this API yet, so neither
+                # direction can be validated for a tracked product.
+                if move.product_id.tracking != "none":
+                    return self.json_response({
+                        "status": "error",
+                        "message": "Lot or serial tracking is not supported yet",
+                    }, 409)
+
                 # Initial implementation supports exact receipt quantities.
                 # Partial receipts will be handled in a later phase.
                 if not move.product_uom.is_zero(
