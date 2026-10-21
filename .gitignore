@@ -1,0 +1,48 @@
+# Environment variables and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Database backups
+backups/
+*.dump
+*.sql
+*.backup
+
+# Temporary API keys and test files
+.agriware_test_key.tmp
+*.tmp
+
+# Python cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Python virtual environments
+.venv/
+venv/
+
+# IDE and operating system files
+.vscode/
+.idea/
+.DS_Store
+*~
+
+# Logs
+*.log
+logs/
+
+# Development source backups
+*.bak
+*.backup
+*.before_*
+
+# Third-party OCA dependencies
+# Installed separately for local development
+/component/
+/component_event/
+/connector/
+/queue_job/

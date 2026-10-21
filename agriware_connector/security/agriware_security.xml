@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- AgriWare Connector application privilege -->
+    <record id="privilege_agriware_connector"
+            model="res.groups.privilege">
+
+        <field name="name">AgriWare Connector</field>
+        <field name="sequence">50</field>
+
+    </record>
+
+    <!-- External WMS API integration user -->
+    <record id="group_agriware_api_user"
+            model="res.groups">
+
+        <field name="name">AgriWare API User</field>
+
+        <field name="privilege_id"
+               ref="agriware_connector.privilege_agriware_connector"/>
+
+        <field name="comment">
+            Allows authorized external warehouse management systems
+            to communicate with Odoo through the AgriWare API.
+        </field>
+
+    </record>
+
+    <!-- AgriWare Connector administrator -->
+    <record id="group_agriware_administrator"
+            model="res.groups">
+
+        <field name="name">AgriWare Administrator</field>
+
+        <field name="privilege_id"
+               ref="agriware_connector.privilege_agriware_connector"/>
+
+        <field name="implied_ids"
+               eval="[(4, ref('agriware_connector.group_agriware_api_user'))]"/>
+
+        <field name="comment">
+            Allows authorized administrators to configure and
+            manage AgriWare Connector integrations.
+        </field>
+
+    </record>
+
+</odoo>

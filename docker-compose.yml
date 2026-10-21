@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  odoo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agriware-odoo:19.0
+
+    depends_on:
+      - db
+
+    ports:
+      - "127.0.0.1:8069:8069"
+
+    environment:
+      HOST: db
+      USER: odoo
+      PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./component:/mnt/extra-addons/component:ro
+      - ./component_event:/mnt/extra-addons/component_event:ro
+      - ./connector:/mnt/extra-addons/connector:ro
+      - ./queue_job:/mnt/extra-addons/queue_job:ro
+      - ./agriware_connector:/mnt/extra-addons/agriware_connector:ro
+
+    restart: unless-stopped
+
+volumes:
+  odoo-db-data:
+  odoo-web-data:
