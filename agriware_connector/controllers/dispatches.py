@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 import math
@@ -204,8 +205,22 @@ class AgriwareDispatchesAPI(http.Controller):
                     "company_id": warehouse.company_id.id,
                 })
 
-            # Sequential duplicate protection.
-            # Concurrency-safe idempotency is required before production.
+            # Serialize concurrent requests for the same external
+            # reference so the duplicate check below cannot race.
+            # The lock is transaction-scoped and releases automatically
+            # on commit or rollback.
+            lock_key = int.from_bytes(
+                hashlib.sha256(
+                    f"agriware_dispatch:{picking_type.id}:"
+                    f"{external_reference}".encode()
+                ).digest()[:8],
+                "big",
+                signed=True,
+            )
+            env.cr.execute(
+                "SELECT pg_advisory_xact_lock(%s)", (lock_key,)
+            )
+
             existing = Picking.search([
                 ("origin", "=", external_reference),
                 ("picking_type_id", "=", picking_type.id),

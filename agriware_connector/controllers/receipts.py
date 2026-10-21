@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 
@@ -111,10 +112,8 @@ class AgriwareReceiptsAPI(http.Controller):
             Picking = env["stock.picking"]
             Move = env["stock.move"]
 
-            if not Picking.check_access_rights(
-                "create", raise_exception=False
-            ) or not Move.check_access_rights(
-                "create", raise_exception=False
+            if not Picking.has_access("create") or not Move.has_access(
+                "create"
             ):
                 return self.json_response(
                     {"status": "error", "message": "Insufficient permissions"},
@@ -176,6 +175,7 @@ class AgriwareReceiptsAPI(http.Controller):
 
                 product = env["product.product"].search([
                     ("id", "=", product_id),
+                    ("company_id", "in", [False, warehouse.company_id.id]),
                 ], limit=1)
 
                 if not product:
@@ -199,9 +199,22 @@ class AgriwareReceiptsAPI(http.Controller):
                     "company_id": warehouse.company_id.id,
                 })
 
-            # Database-backed duplicate protection will be added
-            # before enabling this endpoint for external WMS clients.
-            # For now, do not submit concurrent requests.
+            # Serialize concurrent requests for the same external
+            # reference so the duplicate check below cannot race.
+            # The lock is transaction-scoped and releases automatically
+            # on commit or rollback.
+            lock_key = int.from_bytes(
+                hashlib.sha256(
+                    f"agriware_receipt:{picking_type.id}:"
+                    f"{external_reference}".encode()
+                ).digest()[:8],
+                "big",
+                signed=True,
+            )
+            env.cr.execute(
+                "SELECT pg_advisory_xact_lock(%s)", (lock_key,)
+            )
+
             existing = Picking.search([
                 ("origin", "=", external_reference),
                 ("picking_type_id", "=", picking_type.id),

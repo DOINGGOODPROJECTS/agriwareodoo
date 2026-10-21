@@ -45,14 +45,14 @@ External Warehouse Management Systems
 
 AgriWare Connector uses the following Odoo Community Association modules:
 
-| Module | Version | Repository |
-|---|---|---|
-| component | 19.0.1.0.1 | https://github.com/OCA/connector |
-| component_event | 19.0.1.0.0 | https://github.com/OCA/connector |
-| connector | 19.0.1.0.0 | https://github.com/OCA/connector |
-| queue_job | 19.0.2.1.6 | https://github.com/OCA/queue |
+| Module | Version | Repository | Pinned commit |
+|---|---|---|---|
+| component | 19.0.1.0.1 | https://github.com/OCA/connector | `cce76545ea56b85864fde9a1afb69748bc766e99` |
+| component_event | 19.0.1.0.0 | https://github.com/OCA/connector | `cce76545ea56b85864fde9a1afb69748bc766e99` |
+| connector | 19.0.1.0.0 | https://github.com/OCA/connector | `cce76545ea56b85864fde9a1afb69748bc766e99` |
+| queue_job | 19.0.2.1.6 | https://github.com/OCA/queue | `da2664795eb525698f93dfdd63f6ba5c4c9fccba` |
 
-These are the versions installed in the current development environment. Exact upstream Git revisions have not yet been pinned.
+These are the exact Git revisions verified against the files installed in the current development environment (byte-for-byte identical). Use the pinned commits below rather than tracking the `19.0` branch directly, since upstream can advance independently of this project.
 
 ## Installation
 
@@ -74,12 +74,23 @@ Replace the placeholder password with your own PostgreSQL password.
 
 ### 3. Install OCA Dependencies
 
-Download the required modules from the Odoo 19.0 branches of:
+Clone the upstream repositories and check out the pinned commits listed above, then copy only the needed module directories into the project root:
 
-- https://github.com/OCA/connector
-- https://github.com/OCA/queue
+```bash
+git clone https://github.com/OCA/connector.git /tmp/oca-connector
+git -C /tmp/oca-connector checkout cce76545ea56b85864fde9a1afb69748bc766e99
+cp -r /tmp/oca-connector/component ./component
+cp -r /tmp/oca-connector/component_event ./component_event
+cp -r /tmp/oca-connector/connector ./connector
 
-Place these four module directories in the project root:
+git clone https://github.com/OCA/queue.git /tmp/oca-queue
+git -C /tmp/oca-queue checkout da2664795eb525698f93dfdd63f6ba5c4c9fccba
+cp -r /tmp/oca-queue/queue_job ./queue_job
+
+rm -rf /tmp/oca-connector /tmp/oca-queue
+```
+
+This results in the following module directories at the project root (all excluded from version control by `.gitignore`, since they are third-party dependencies, not part of this project):
 
 ```text
 component/
@@ -120,6 +131,9 @@ http://localhost:8069
 | POST | `/agriware/api/v1/dispatches` | Create stock dispatch |
 | POST | `/agriware/api/v1/dispatches/{id}/validate` | Validate dispatch |
 
+Full request/response schemas, authentication details, and error responses for every endpoint
+are documented in [docs/API.md](docs/API.md).
+
 ## Authentication
 
 Protected endpoints require an Odoo API key.
@@ -130,7 +144,7 @@ Include the API key in the HTTP Authorization header:
 Authorization: Bearer YOUR_API_KEY
 ```
 
-The authenticated Odoo user must belong to the AgriWare API User security group or a group that implies it.
+The authenticated Odoo user must belong to the AgriWare API User security group or a group that implies it. See [docs/API.md](docs/API.md) for how to generate a key and configure an integration user.
 
 ## Security
 
@@ -140,10 +154,15 @@ The current implementation includes:
 - AgriWare-specific API access permissions
 - HTTP 401 responses for unauthenticated requests
 - HTTP 403 responses for users without AgriWare API permissions
+- Company-scoped lookups for warehouses, partners, and products
+- Transaction-scoped advisory locking to prevent duplicate receipts/dispatches from concurrent requests with the same external reference
+- Reference-prefix scoping (`AGRIWARE-RCPT-` / `AGRIWARE-DISP-`) so the validate endpoints cannot confirm stock operations that were not created by AgriWare
 - Environment-based database credentials
 - Git exclusions for credentials and database backups
 
-Additional security hardening is required before production deployment.
+See [docs/API.md](docs/API.md#known-limitations) for known limitations (no per-warehouse access
+control, no pagination, no partial receipts/dispatches). Additional security hardening is
+required before production deployment.
 
 ## Project Status
 

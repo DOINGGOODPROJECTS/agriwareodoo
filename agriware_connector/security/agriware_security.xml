@@ -19,6 +19,13 @@
         <field name="privilege_id"
                ref="agriware_connector.privilege_agriware_connector"/>
 
+        <!-- The API reads/writes stock.picking, stock.move, stock.quant,
+             product.product, stock.warehouse, and res.partner. Without the
+             underlying Inventory access, every receipt/dispatch endpoint
+             would reject this group's own members with 403. -->
+        <field name="implied_ids"
+               eval="[(4, ref('stock.group_stock_user'))]"/>
+
         <field name="comment">
             Allows authorized external warehouse management systems
             to communicate with Odoo through the AgriWare API.

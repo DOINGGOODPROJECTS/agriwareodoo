@@ -189,6 +189,13 @@ class AgriwareReceiptValidationAPI(http.Controller):
                     "message": "Only draft receipts can be validated",
                 }, 409)
 
+            # This API must not validate unrelated Odoo receipts.
+            if not external_reference.startswith("AGRIWARE-RCPT-"):
+                return self.json_response({
+                    "status": "error",
+                    "message": "Receipt is not managed by AgriWare",
+                }, 403)
+
             moves = receipt.move_ids.filtered(
                 lambda m: m.state != "cancel"
             )
