@@ -12,12 +12,14 @@ there's no reason to send the actual secret itself.
 
 ## The process
 
-1. **Customer submits an integration request** — a GitHub issue (see
+1. **Customer submits an integration request** — by email (see
    [How to request](#how-to-request) below) using the questionnaire in this document.
-2. **AgriWare reviews the customer's WMS** — based on the questionnaire answers and any public
-   documentation the customer can point to for their WMS's own API or integration points.
+2. **Cool Agristock reviews the customer's WMS** — based on the questionnaire answers and any
+   public documentation the customer can point to for their WMS's own API or integration points.
 3. **Technical compatibility is assessed** — whether the WMS can call AgriWare Connector's REST API
-   directly, or needs a translation layer (adapter) in between.
+   directly, or needs a translation layer (adapter) in between. **No integration is promised until
+   this assessment is complete** — compatibility depends entirely on the specific WMS's own API or
+   lack of one, so it cannot be judged from the questionnaire alone before this step.
 4. **Required API adaptations are identified** — on the WMS side (most common, since AgriWare
    Connector's API itself isn't modified per customer — see
    [Known limitations](API.md#known-limitations) for what the API does and doesn't support today).
@@ -66,6 +68,13 @@ list cap or lack of pagination, see [Known limitations](API.md#known-limitations
 **Customization requirements**
 (anything beyond the documented API's existing behavior — e.g. workflow mapping, data
 transformation, partial-quantity handling)
+
+**Testing requirements**
+(how you plan to validate the integration before go-live — e.g. a staging Odoo database, specific
+workflows that must be demonstrated, who signs off)
+
+**Deployment requirements**
+(target go-live timing if any, who performs the production cutover, and any downtime constraints)
 ```
 
 ## How to request
