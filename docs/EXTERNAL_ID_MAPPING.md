@@ -214,20 +214,25 @@ in `tests/test_external_id_mapping.py`).
 
 ## Future API integration
 
-This phase deliberately stops at the service layer. The planned, **not yet built**, REST
-integration (Phases B-G) will:
+**Update: Phase B now consumes this service layer**, confirming the design worked as intended —
+`controllers/products.py` calls `resolve_mapping()`/`create_mapping()` exactly as sketched below,
+with no changes needed to this phase's schema or constraints. See
+[PRODUCT_SYNCHRONIZATION.md](PRODUCT_SYNCHRONIZATION.md) for the full reference. `update_mapping()`
+and `remove_mapping()` remain uncalled by any controller so far — Phase B's `PATCH` endpoint
+updates the underlying product record directly, since the mapping itself (which external_id points
+to which product) never changes during a product update.
 
-- Call `resolve_mapping()`/`create_mapping()` from new controllers (`POST`/`PATCH /products`,
-  `/warehouses`, `/suppliers`, `/lots`) to translate a WMS's own identifiers into Odoo records,
-  exactly as designed in [WMS_FIRST_INTEGRATION_PLAN.md](WMS_FIRST_INTEGRATION_PLAN.md).
-- Add an optional `*_external_id` alternative to the existing numeric `product_id`/`warehouse_id`/
+Still not built — warehouse, supplier, and lot sync (Phases C-F), and the additive
+`*_external_id` fields on `POST /receipts`/`/dispatches` (Phase G):
+
+- Warehouse/supplier/lot controllers will call `resolve_mapping()`/`create_mapping()` the same way
+  Phase B's product controller does, exactly as designed in
+  [WMS_FIRST_INTEGRATION_PLAN.md](WMS_FIRST_INTEGRATION_PLAN.md).
+- An optional `*_external_id` alternative to the existing numeric `product_id`/`warehouse_id`/
   `supplier_id`/`customer_id` fields on `POST /receipts` and `POST /dispatches`, resolved via
   `resolve_mapping()` — purely additive, existing numeric-ID callers unaffected (Phase G).
-- Translate a `409`-style HTTP response directly from `create_mapping()`'s `created=False` case,
-  mirroring exactly how receipt/dispatch duplicate-reference handling already works today.
 
-None of this exists yet. This document will be updated again once a controller actually calls this
-service layer.
+This document will be updated again as each further phase starts consuming this service layer.
 
 ## Verification performed
 

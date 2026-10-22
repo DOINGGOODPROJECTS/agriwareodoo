@@ -1,6 +1,6 @@
 {
     "name": "AgriWare Connector",
-    "version": "19.0.1.1.0",
+    "version": "19.0.1.2.0",
     "summary": "Connect Odoo with AgriWare Warehouse Management",
     "description": """
 AgriWare — Open-Source Warehouse Management for Agribusinesses.

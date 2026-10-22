@@ -8,3 +8,4 @@ from . import test_api_keys
 from . import test_menu_visibility
 from . import test_external_systems
 from . import test_external_id_mapping
+from . import test_product_sync

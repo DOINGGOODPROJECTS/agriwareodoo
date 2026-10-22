@@ -210,23 +210,47 @@ silent precedence rule.
 
 ### Phase B — Product creation and updates
 
-- **Technical tasks:** `POST`/`PATCH /products` controllers; allow-list enforcement; UOM code
-  resolution (Phase D delivers the full UOM mapping table — Phase B can start with a small,
-  hardcoded set of common units and defer the full table to D, or Phase B waits for D; this
-  sequencing is an open decision for approval).
-- **Files likely to change:** new `controllers/products.py`; `controllers/__init__.py`; `docs/API.md`
-  update (once implemented, not before).
-- **Database models:** none new (reuses `product.product` + Phase A's mapping model).
-- **API endpoints:** `POST /products`, `PATCH /products/{external_id}`.
-- **Security requirements:** `has_access('create'/'write')` on `product.product` before writing,
-  mirroring the existing pattern in `receipts.py`.
-- **Automated tests:** create, duplicate rejection, update, update of a non-existent external_id
-  (404), allow-list enforcement (a request trying to set a non-allow-listed field is ignored, not
-  erroring and not applied).
-- **Dependencies:** Phase A.
-- **Risks:** low — closely mirrors existing, well-tested patterns.
-- **Acceptance criteria:** a WMS can create a new product it has never told Odoo about before, by
-  external ID alone, and later update its name/barcode without knowing the Odoo ID.
+**Status: IMPLEMENTED** (branch `feature/wms-product-sync`, based on Phase A, not yet merged). See
+[PRODUCT_SYNCHRONIZATION.md](PRODUCT_SYNCHRONIZATION.md) for the full as-built reference.
+
+- **Technical tasks:** done, plus one addition not originally scoped here: binding an
+  `agriware.api.key` to an `agriware.external.system` (Phase 3 of the implementation task), since
+  "resolve external system from the authenticated key" required it and nothing had built that
+  binding yet. UOM resolution shipped as a small hardcoded set now (not the Phase D table) — the
+  sequencing question is resolved: Phase B shipped first, Phase D's richer table remains future
+  work, exactly as flagged as an open decision.
+- **Files changed:** `controllers/products.py` (new); `controllers/__init__.py`,
+  `controllers/api_security.py` (added `resolve_authorized_external_system()`); `models/api_key.py`
+  (added `external_system_id`, its company constraint, and
+  `resolve_authorized_external_system()`); `wizards/api_key_generate_wizard.py` and
+  `views/api_key_views.xml` (expose the binding at generation time); `security/ir.model.access.csv`
+  (two new grants — see Risks); `tests/test_product_sync.py` (new); `tests/__init__.py`;
+  `__manifest__.py` (version bump).
+- **Database models:** none new — reuses `product.product` and Phase A's mapping model, as planned.
+- **API endpoints:** `POST /products`, `PATCH /products/{external_id}`, exactly as planned.
+- **Security requirements:** implemented as **explicit, auditable `ir.model.access.csv` grants**
+  (not a `sudo()` bypass) — see Risks for why both `product.product` and `product.template` needed
+  a grant, not just the former.
+- **Automated tests:** 22 new tests — create, duplicate rejection (including a forced-race
+  variant), update, 404 on unknown external_id, allow-list enforcement, **explicit rejection**
+  (not silent ignoring — a deliberate refinement, see
+  [PRODUCT_SYNCHRONIZATION.md](PRODUCT_SYNCHRONIZATION.md#supported-product-fields)), plus the full
+  API-key-binding security matrix (valid/missing/invalid/revoked/expired/unbound keys, inactive
+  external system, cross-company, cross-system). All 106 tests in the module pass (84 pre-existing
+  + 22 new).
+- **Dependencies:** Phase A — confirmed sufficient, nothing else was needed.
+- **Risks, as anticipated vs. actual:** anticipated "low, closely mirrors existing patterns" — not
+  quite true in practice. Two real issues surfaced only by testing against the installed Odoo 19,
+  not by code review: (1) `stock.group_stock_user` (implied by AgriWare API User) has **no**
+  `product.product` create/write access at all, unlike `stock.picking`/`stock.move` — had to be
+  granted explicitly; (2) granting `product.product` access alone wasn't sufficient either —
+  creating a `product.product` without an existing template also needs `create` access to the
+  underlying `product.template` (delegation inheritance), only discovered when every product-
+  creation test failed with an ACL error naming `product.template`, not `product.product`.
+- **Acceptance criteria:** met, and demonstrated live — see
+  [PRODUCT_SYNCHRONIZATION.md's Verification performed](PRODUCT_SYNCHRONIZATION.md#verification-performed)
+  for the real HTTP request/response sequence (create Cassava → update it → repeat the create →
+  `409`, no duplicate) with direct PostgreSQL row verification, not just API response trust.
 
 ### Phase C — Warehouse creation and mapping
 

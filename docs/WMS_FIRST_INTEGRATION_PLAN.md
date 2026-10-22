@@ -86,6 +86,11 @@ more round-trips for no real benefit).
 
 ### 1–2. Product creation and updates
 
+**Status: IMPLEMENTED** (Phase B, branch `feature/wms-product-sync`) — see
+[PRODUCT_SYNCHRONIZATION.md](PRODUCT_SYNCHRONIZATION.md) for the authoritative, as-built reference;
+the sketch below is preserved for history but the shipped allow-list differs slightly (no
+`is_storable` as a request field — it's fixed server-side; `description` was added).
+
 - `POST /agriware/api/v1/products` creates a `product.product` (consistent with the existing
   `GET /products` endpoint, which also operates on `product.product`, not `product.template`).
 - Allow-listed fields (WMS-owned): `name`, `default_code`, `barcode`, `is_storable` (fixed `true`

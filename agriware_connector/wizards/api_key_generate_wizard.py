@@ -18,6 +18,17 @@ class AgriwareApiKeyGenerateWizard(models.TransientModel):
         default=lambda self: self.env.company,
     )
 
+    external_system_id = fields.Many2one(
+        "agriware.external.system",
+        string="Authorized External System",
+        domain="[('company_id', '=', company_id)]",
+        help="Optional. Binding this key to an external system "
+             "authorizes it for write operations that require one (e.g. "
+             "product synchronization). Leave empty for a key that only "
+             "needs read access or receipt/dispatch operations -- those "
+             "are unaffected either way.",
+    )
+
     never_expires = fields.Boolean(
         string="Never Expires",
     )
@@ -50,6 +61,7 @@ class AgriwareApiKeyGenerateWizard(models.TransientModel):
             name=self.name,
             company=self.company_id,
             expiration_date=expiration,
+            external_system=self.external_system_id or None,
         )
 
         return {

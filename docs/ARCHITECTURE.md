@@ -174,7 +174,7 @@ used in production by at least one real integration — it is **not** part of th
 | Self-service API key management | **Implemented** |
 | Company isolation, duplicate-transaction protection | **Implemented** |
 | External ID mapping (WMS ID ↔ Odoo ID) | **Implemented** (Phase A — infrastructure only, no REST endpoints yet; see [EXTERNAL_ID_MAPPING.md](EXTERNAL_ID_MAPPING.md)) |
-| Create/update products via API | **Proposed — not implemented** |
+| Create/update products via API | **Implemented** (Phase B — see [PRODUCT_SYNCHRONIZATION.md](PRODUCT_SYNCHRONIZATION.md)) |
 | Create/update warehouses via API | **Proposed — not implemented** |
 | Create/update suppliers via API | **Proposed — not implemented** |
 | Unit-of-measure mapping | **Proposed — not implemented** |

@@ -8,6 +8,7 @@
             <list string="API Keys" create="0" delete="0">
                 <field name="name"/>
                 <field name="company_id" groups="base.group_multi_company"/>
+                <field name="external_system_id"/>
                 <field name="create_date" string="Created"/>
                 <field name="never_expires"/>
                 <field name="expiration_date"/>
@@ -44,6 +45,7 @@
                         <field name="name"/>
                         <field name="company_id" groups="base.group_multi_company"/>
                         <field name="integration_user_id"/>
+                        <field name="external_system_id"/>
                         <field name="create_date" string="Created"/>
                         <field name="never_expires"/>
                         <field name="expiration_date"/>
@@ -77,6 +79,7 @@
                 <group>
                     <field name="name" placeholder="e.g. Main Warehouse Integration"/>
                     <field name="company_id" groups="base.group_multi_company"/>
+                    <field name="external_system_id"/>
                     <field name="never_expires"/>
                     <field name="expiration_date" invisible="never_expires" required="not never_expires"/>
                 </group>

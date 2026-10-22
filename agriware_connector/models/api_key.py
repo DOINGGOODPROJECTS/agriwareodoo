@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class AgriwareApiKey(models.Model):
@@ -53,6 +53,20 @@ class AgriwareApiKey(models.Model):
         copy=False,
     )
 
+    external_system_id = fields.Many2one(
+        "agriware.external.system",
+        string="Authorized External System",
+        readonly=True,
+        help="If set, this key's integration identity is authorized to "
+             "use write operations that require a resolved external "
+             "system (e.g. product synchronization). Existing keys with "
+             "no value here are unaffected: they keep working exactly as "
+             "before for every endpoint that doesn't require this "
+             "binding. Set only at key generation time, via the Generate "
+             "API Key wizard -- never editable afterward, matching this "
+             "model's existing read-only-after-creation form.",
+    )
+
     state = fields.Selection(
         [
             ("active", "Active"),
@@ -79,6 +93,18 @@ class AgriwareApiKey(models.Model):
                 record.state = "expired"
             else:
                 record.state = "active"
+
+    @api.constrains("company_id", "external_system_id")
+    def _check_external_system_company(self):
+        for record in self:
+            if (
+                record.external_system_id
+                and record.external_system_id.company_id != record.company_id
+            ):
+                raise ValidationError(_(
+                    "The authorized external system must belong to the "
+                    "same company as the API key."
+                ))
 
     def _check_can_manage(self, company=None):
         """Raise unless the current user is an AgriWare Administrator for
@@ -143,18 +169,30 @@ class AgriwareApiKey(models.Model):
         return user
 
     @api.model
-    def generate_key(self, name, company, expiration_date=None):
+    def generate_key(self, name, company, expiration_date=None, external_system=None):
         """Create a new AgriWare API key for ``company``.
 
         :param str name: integration label shown in the UI.
         :param res.company company: the owning company.
         :param datetime.datetime|None expiration_date: ``None`` means the
             key never expires.
+        :param agriware.external.system|None external_system: if given,
+            binds this key's integration identity to that external
+            system, authorizing it for write operations that require a
+            resolved external system (e.g. product synchronization).
+            Optional and ``None`` by default -- omitting it behaves
+            exactly as before this parameter existed.
         :returns: tuple of (the raw API key, the created agriware.api.key
             record). The raw key is returned exactly once and is never
             stored anywhere.
         """
         self._check_can_manage(company=company)
+
+        if external_system and external_system.company_id != company:
+            raise ValidationError(_(
+                "The authorized external system must belong to the same "
+                "company as the API key."
+            ))
 
         integration_user = self._get_or_create_integration_user(company)
 
@@ -191,9 +229,55 @@ class AgriwareApiKey(models.Model):
             "apikey_id": apikey_record.id,
             "expiration_date": expiration_date,
             "never_expires": not expiration_date,
+            "external_system_id": external_system.id if external_system else False,
         })
 
         return raw_key, record
+
+    @api.model
+    def resolve_authorized_external_system(self, user):
+        """Server-side resolution of the external system authorized for
+        the currently authenticated ``user`` -- never trust an
+        ``external_system_id`` supplied by an API client directly.
+
+        Why this resolves from ``user`` rather than from "the specific
+        key that authenticated": Odoo's own Bearer token verification
+        (``_check_apikey_credentials``) only returns the matching user
+        id, not which ``res.users.apikeys`` row matched -- and several
+        ``agriware.api.key`` records can share one integration user per
+        company (see ``_get_or_create_integration_user``), by existing,
+        tested, unchanged design. So in practice every key sharing one
+        company's integration user shares one authorization outcome:
+        whichever bound, active key(s) exist for that identity.
+
+        :returns: the authorized, active ``agriware.external.system``
+            recordset (empty if none is authorized).
+        :raises ValidationError: if two bound keys for the same identity
+            resolve to *different* external systems -- a misconfigured,
+            ambiguous state that must be surfaced, never silently
+            resolved by guessing one.
+        """
+        candidates = self.sudo().search([
+            ("integration_user_id", "=", user.id),
+            ("external_system_id", "!=", False),
+        ])
+
+        # state is a non-stored compute (see _compute_state) -- filter in
+        # Python rather than via a search domain, and likewise exclude
+        # any external system that has since been deactivated.
+        authorized = candidates.filtered(
+            lambda rec: rec.state == "active" and rec.external_system_id.active
+        ).mapped("external_system_id")
+
+        if len(authorized) > 1:
+            raise ValidationError(_(
+                "This integration identity is bound to more than one "
+                "active external system -- this is a misconfiguration "
+                "that must be resolved by an administrator before "
+                "write operations can proceed."
+            ))
+
+        return authorized
 
     def action_revoke(self):
         self._check_can_manage()
@@ -233,5 +317,6 @@ class AgriwareApiKey(models.Model):
                 "default_name": self.name,
                 "default_company_id": self.company_id.id,
                 "default_never_expires": self.never_expires,
+                "default_external_system_id": self.external_system_id.id,
             },
         }
