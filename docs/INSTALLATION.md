@@ -10,22 +10,17 @@ your WMS side, see [WMS_INTEGRATION.md](WMS_INTEGRATION.md).
 
 ## Before you start: how is your Odoo hosted?
 
-AgriWare Connector depends on four Odoo Community Association (OCA) modules (`component`,
-`component_event`, `connector`, `queue_job`) that are not part of standard Odoo. How you get those
-onto your instance depends on your hosting:
+How you get AgriWare Connector onto your instance depends on your hosting:
 
-| Hosting | Can you install third-party modules with external dependencies? |
+| Hosting | Supported? |
 |---|---|
-| Self-hosted / on-premise Odoo 19 | Yes — you (or your IT provider) have full access to the server's addons path. |
-| Odoo.sh | Yes — modules are added to your Odoo.sh branch's repository, typically by a developer. |
-| Odoo Online (odoo.com SaaS) | Usually restricted — Odoo Online does not generally allow arbitrary third-party modules with external dependencies to be uploaded by the customer. Check with Odoo support or your Odoo partner before assuming this will work. |
+| Self-hosted / on-premise Odoo 19 | Yes — verified below. You (or your IT provider) have full access to the server's addons path. |
+| Odoo.sh | The marketplace listing offers a "Deploy on Odoo.sh" option, which requires signing in with your Odoo.com account and authorizing via GitHub. We have not independently verified this deployment path end-to-end — if you use Odoo.sh, follow Odoo.sh's own documentation for adding a third-party module to your branch, or see [Free software and paid services](../README.md#free-software-and-paid-services) for paid installation help. |
+| Odoo Online (odoo.com SaaS) | **Not supported.** Odoo Online does not support installing custom third-party modules with external dependencies. If this is your only hosting option, this guide does not apply to you — contact Odoo or an Odoo partner about moving to Odoo.sh or a self-hosted instance. |
 
-If you're not sure which applies to you, or you don't have anyone technical on hand to install the
-OCA dependencies, see [Free software and paid services](../README.md#free-software-and-paid-services)
-for optional paid installation help.
-
-The remaining steps assume a self-hosted or Odoo.sh environment where a technical contact can place
-files on the server. If that isn't you, forward this guide to whoever manages your Odoo hosting.
+The remaining steps are verified for a self-hosted Odoo 19 environment where a technical contact
+can place files on the server. If that isn't you, forward this guide to whoever manages your Odoo
+hosting.
 
 ## 1. Download AgriWare Connector from Odoo Apps
 
@@ -33,44 +28,26 @@ Open the marketplace listing:
 
 <https://apps.odoo.com/apps/modules/19.0/agriware_connector>
 
-- On a self-hosted instance, use the **Download** option on that page to get the module as a zip
-  file, then extract it into your Odoo addons directory (the folder your `odoo.conf`'s
-  `addons_path` already includes, or a new folder you add to it).
-- On Odoo.sh, add the module to your branch's repository under its custom-addons path, following
-  your Odoo.sh project's normal deployment process.
+Click **Download for v 19.0**. This downloads a single zip file
+(`agriware_connector-19.0.1.0.0.zip`) containing everything the module needs.
 
-Do **not** install it yet — the OCA dependencies below must be in place first, or Odoo will refuse
-to install AgriWare Connector with a missing-dependency error.
+## 2. Extract the package and place it in your Odoo addons path
 
-## 2. Install the required OCA dependencies
+AgriWare Connector depends on four Odoo Community Association (OCA) modules — `component`,
+`component_event`, `connector`, `queue_job`. **You do not need to download or clone these
+separately.** The marketplace zip you downloaded in step 1 already bundles all four, at exactly
+the versions AgriWare Connector requires (`component` 19.0.1.0.1, `component_event` 19.0.1.0.0,
+`connector` 19.0.1.0.0, `queue_job` 19.0.2.1.6). This was verified directly: installing straight
+from this zip's contents, with no other files added, succeeded cleanly in a from-scratch Odoo 19
+test environment.
 
-Place these four modules in the same addons path as AgriWare Connector, at the exact pinned
-commits below (not the latest `19.0` branch — upstream can change independently of this project):
-
-| Module | Version | Repository | Pinned commit |
-|---|---|---|---|
-| component | 19.0.1.0.1 | https://github.com/OCA/connector | `cce76545ea56b85864fde9a1afb69748bc766e99` |
-| component_event | 19.0.1.0.0 | https://github.com/OCA/connector | `cce76545ea56b85864fde9a1afb69748bc766e99` |
-| connector | 19.0.1.0.0 | https://github.com/OCA/connector | `cce76545ea56b85864fde9a1afb69748bc766e99` |
-| queue_job | 19.0.2.1.6 | https://github.com/OCA/queue | `da2664795eb525698f93dfdd63f6ba5c4c9fccba` |
-
-For a technical contact, the commands are:
-
-```bash
-git clone https://github.com/OCA/connector.git /tmp/oca-connector
-git -C /tmp/oca-connector checkout cce76545ea56b85864fde9a1afb69748bc766e99
-cp -r /tmp/oca-connector/component /path/to/your/addons/
-cp -r /tmp/oca-connector/component_event /path/to/your/addons/
-cp -r /tmp/oca-connector/connector /path/to/your/addons/
-
-git clone https://github.com/OCA/queue.git /tmp/oca-queue
-git -C /tmp/oca-queue checkout da2664795eb525698f93dfdd63f6ba5c4c9fccba
-cp -r /tmp/oca-queue/queue_job /path/to/your/addons/
-
-rm -rf /tmp/oca-connector /tmp/oca-queue
-```
-
-Restart the Odoo service after copying these in, so Odoo picks up the new addons path contents.
+1. Extract the zip. You'll see five top-level folders: `agriware_connector`, `component`,
+   `component_event`, `connector`, `queue_job`.
+2. Copy **all five folders** into your Odoo addons directory (the folder your `odoo.conf`'s
+   `addons_path` already includes, or a new folder you add to it). Keep every folder — removing
+   any of the four dependency folders will make AgriWare Connector refuse to install with a
+   missing-dependency error.
+3. Restart the Odoo service so it picks up the new addons path contents.
 
 ## 3. Install AgriWare Connector in Odoo 19
 
@@ -80,11 +57,13 @@ Restart the Odoo service after copying these in, so Odoo picks up the new addons
 3. Go to the **Apps** menu.
 4. Click **Update Apps List** (top-left), then **Update**.
 5. Search for **AgriWare Connector**.
-6. Click **Install**. Odoo installs AgriWare Connector together with `component`,
-   `component_event`, `connector`, and `queue_job` in one step.
+6. Click **Install**. Odoo installs AgriWare Connector together with the bundled `component`,
+   `component_event`, `connector`, and `queue_job` modules in one step — no separate dependency
+   installation step is needed.
 
-If the module does not appear in the search results, the files were not placed in a path Odoo
-scans, or the service was not restarted after step 2 — recheck those before continuing.
+If the module does not appear in the search results, one or more of the five folders from step 2
+was not placed in a path Odoo scans, or the service was not restarted after step 2 — recheck those
+before continuing.
 
 ## 4. Assign the appropriate user permissions
 
@@ -190,8 +169,8 @@ happen with a key generated through the wizard in step 6, so contact support if 
 
 | Symptom | Likely cause |
 |---|---|
-| AgriWare Connector doesn't appear after Update Apps List | The OCA dependency modules aren't in the addons path, or Odoo wasn't restarted after adding them. |
-| Install fails citing a missing dependency | One of `component`, `component_event`, `connector`, `queue_job` is missing or at the wrong version. |
+| AgriWare Connector doesn't appear after Update Apps List | One or more of the five extracted folders isn't in the addons path, or Odoo wasn't restarted after adding them. |
+| Install fails citing a missing dependency | One of the bundled `component`, `component_event`, `connector`, `queue_job` folders was skipped during extraction or copying — re-extract the zip and copy all five folders together. |
 | **AgriWare Connector** menu is missing after install | Your user doesn't have the AgriWare Administrator access right (step 4). |
 | `401 Unauthorized` (HTML, not JSON) | Bad, missing, expired, or revoked API key. |
 | `403` JSON error | Authenticated, but the key's integration user lacks the AgriWare API User group — shouldn't occur with wizard-generated keys. |

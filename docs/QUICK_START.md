@@ -25,8 +25,9 @@ TEST API CONNECTION
 EXCHANGE WAREHOUSE DATA
 ```
 
-1. **Install AgriWare Connector** — from the Odoo Apps marketplace, into your Odoo 19 instance
-   (along with its required OCA dependencies). See [INSTALLATION.md](INSTALLATION.md#1-download-agriware-connector-from-odoo-apps).
+1. **Install AgriWare Connector** — from the Odoo Apps marketplace, into your Odoo 19 instance. The
+   download bundles its own required OCA dependencies, so there's nothing extra to fetch. See
+   [INSTALLATION.md](INSTALLATION.md#1-download-agriware-connector-from-odoo-apps).
 2. **Assign user permissions** — grant the **AgriWare Administrator** access right to whoever will
    manage API keys. See [INSTALLATION.md](INSTALLATION.md#4-assign-the-appropriate-user-permissions).
 3. **Generate an API key** — from **AgriWare Connector → API Management → Generate API Key**,

@@ -34,7 +34,7 @@ layer between an existing WMS and Odoo's Inventory app.
 | Guide | For | Covers |
 |---|---|---|
 | [Quick Start Guide](docs/QUICK_START.md) | Everyone | The shortest path through the whole workflow, with a minimal working example. |
-| [Installation Guide](docs/INSTALLATION.md) | Business users, no Odoo dev experience required | Downloading, installing OCA dependencies, assigning permissions, generating a key, and testing the connection. |
+| [Installation Guide](docs/INSTALLATION.md) | Business users, no Odoo dev experience required | Downloading the marketplace package (which bundles its own OCA dependencies), assigning permissions, generating a key, and testing the connection. |
 | [WMS Integration Guide](docs/WMS_INTEGRATION.md) | Developers configuring the WMS side | Architecture, authentication, every endpoint with request/response examples, idempotency, and error handling. |
 | [API Reference](docs/API.md) | Developers | The complete, field-by-field technical specification of every endpoint. |
 
@@ -133,6 +133,13 @@ to the WMS. All data ultimately lives in Odoo's own PostgreSQL database — Agri
 no separate datastore.
 
 ## Installation
+
+This section covers building AgriWare Connector **from source** for development, where the OCA
+dependencies are not part of this Git repository (see [`.gitignore`](.gitignore)) and must be
+fetched separately, as shown below. If you're a business installing the module from the Odoo Apps
+Marketplace rather than building from source, see the [Installation Guide](docs/INSTALLATION.md)
+instead — the marketplace package bundles its own copies of the OCA dependencies, so no separate
+cloning step is needed there.
 
 ### Requirements
 
