@@ -6,3 +6,5 @@ from . import test_receipts
 from . import test_dispatches
 from . import test_api_keys
 from . import test_menu_visibility
+from . import test_external_systems
+from . import test_external_id_mapping

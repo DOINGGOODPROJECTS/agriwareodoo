@@ -59,4 +59,18 @@
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
 
+    <!-- Each company only ever sees and manages its own external systems. -->
+    <record id="rule_agriware_external_system_company" model="ir.rule">
+        <field name="name">AgriWare External System: multi-company</field>
+        <field name="model_id" ref="model_agriware_external_system"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Each company only ever sees its own external ID mappings. -->
+    <record id="rule_agriware_external_id_mapping_company" model="ir.rule">
+        <field name="name">AgriWare External ID Mapping: multi-company</field>
+        <field name="model_id" ref="model_agriware_external_id_mapping"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
 </odoo>
