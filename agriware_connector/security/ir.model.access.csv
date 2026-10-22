@@ -6,3 +6,4 @@ access_agriware_external_system_admin,agriware.external.system.admin,model_agriw
 access_agriware_external_id_mapping_admin,agriware.external.id.mapping.admin,model_agriware_external_id_mapping,agriware_connector.group_agriware_administrator,1,0,0,0
 access_agriware_product_write_api_user,product.product.write.api.user,product.model_product_product,agriware_connector.group_agriware_api_user,0,1,1,0
 access_agriware_product_template_write_api_user,product.template.write.api.user,product.model_product_template,agriware_connector.group_agriware_api_user,0,1,1,0
+access_agriware_uom_mapping_admin,agriware.uom.mapping.admin,model_agriware_uom_mapping,agriware_connector.group_agriware_administrator,1,1,1,1

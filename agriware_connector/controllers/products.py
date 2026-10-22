@@ -149,18 +149,14 @@ class AgriwareProductsAPI(http.Controller):
                 )
 
         unit_code = payload.get("unit")
-        if unit_code is not None:
-            if not isinstance(unit_code, str) or unit_code.lower() not in SUPPORTED_UNITS:
-                return self.json_response({
-                    "status": "error",
-                    "message": "Unsupported unit: %r" % (unit_code,),
-                }, 400)
-            uom_xmlid = SUPPORTED_UNITS[unit_code.lower()]
-        else:
-            uom_xmlid = DEFAULT_UNIT_XMLID
+        if unit_code is not None and not isinstance(unit_code, str):
+            return self.json_response(
+                {"status": "error", "message": "Invalid unit"}, 400,
+            )
 
         try:
             env = request.env
+            company = external_system.company_id
 
             Product = env["product.product"]
             if not Product.has_access("create"):
@@ -175,8 +171,7 @@ class AgriwareProductsAPI(http.Controller):
             # product. See docs/PRODUCT_SYNCHRONIZATION.md's Duplicate
             # handling section for the full reasoning.
             existing = Mapping.resolve_mapping(
-                external_system.company_id, external_system,
-                "product.product", external_id,
+                company, external_system, "product.product", external_id,
             )
             if existing:
                 return self.json_response({
@@ -185,7 +180,23 @@ class AgriwareProductsAPI(http.Controller):
                     "product_id": existing.res_id,
                 }, 409)
 
-            uom = env.ref(uom_xmlid)
+            # Resolve the unit: an admin-configured agriware.uom.mapping
+            # row takes precedence (Phase D), falling back to the small
+            # hardcoded set from Phase B for full backward compatibility
+            # -- an integration that has never configured a mapping, and
+            # only ever sends "kg"/"unit"/etc., is entirely unaffected.
+            if unit_code is not None:
+                UomMapping = env["agriware.uom.mapping"]
+                uom = UomMapping.resolve_unit(company, external_system, unit_code)
+                if not uom:
+                    if unit_code.lower() not in SUPPORTED_UNITS:
+                        return self.json_response({
+                            "status": "error",
+                            "message": "Unsupported unit: %r" % (unit_code,),
+                        }, 400)
+                    uom = env.ref(SUPPORTED_UNITS[unit_code.lower()])
+            else:
+                uom = env.ref(DEFAULT_UNIT_XMLID)
 
             product = Product.create({
                 "name": name.strip(),

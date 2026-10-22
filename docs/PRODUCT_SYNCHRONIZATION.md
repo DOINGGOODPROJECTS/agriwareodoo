@@ -145,6 +145,13 @@ client-controllable.
 
 ## Supported units
 
+**Update (Phase D): the database-backed UOM mapping is now implemented** — see
+[UOM_MAPPING.md](UOM_MAPPING.md) for the full reference. `unit` resolution now checks, in order:
+(1) an administrator-configured `agriware.uom.mapping` row for the caller's company and external
+system, then (2) the small hardcoded set below, which remains exactly as it was in Phase B for
+full backward compatibility — an integration that has never configured a mapping is entirely
+unaffected.
+
 A small, explicit, hardcoded set — verified to exist in this installed Odoo 19 via `env.ref()`
 directly before use, not guessed:
 
@@ -156,12 +163,10 @@ directly before use, not guessed:
 | `l`, `liter`, `litre` | L |
 | `unit`, `units`, `pcs` | Units |
 
-Omitting `unit` defaults to **Units**. Any other value — including plausible-looking ones like
-`bag` or `box`, which this standard Odoo installation does not ship as a unit — is rejected with
-`400`, never silently guessed or defaulted differently. **This is not the full database-backed UOM
-mapping** — that remains scheduled for Phase D (see
-[API_ROADMAP.md](API_ROADMAP.md#phase-d--supplier-integration-and-uom-mapping)); this is
-intentionally a minimal, documented starting set.
+Omitting `unit` defaults to **Units**. Any other value not matching a configured mapping **or**
+this hardcoded set — including plausible-looking ones like `bag` or `box`, which this standard
+Odoo installation does not ship as a native unit — is rejected with `400`, never silently guessed
+or defaulted differently.
 
 ## Duplicate behavior
 

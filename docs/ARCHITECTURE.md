@@ -48,11 +48,18 @@ Verified by reading `agriware_connector/controllers/`, `agriware_connector/model
 
 - **Models:** `agriware.api.key` (self-service API key management), `agriware.connection`
   (an unused, hidden model from an earlier design — see
-  [Known limitations](API.md#known-limitations)), and, as of Phase A,
-  `agriware.external.system` and `agriware.external.id.mapping` (the external-ID mapping
-  infrastructure — see [EXTERNAL_ID_MAPPING.md](EXTERNAL_ID_MAPPING.md)). **No product, warehouse,
-  or supplier sync endpoint exists yet** — Phase A is foundational infrastructure only; nothing
-  calls it yet.
+  [Known limitations](API.md#known-limitations)); `agriware.external.system` and
+  `agriware.external.id.mapping` (Phase A's external-ID mapping infrastructure — see
+  [EXTERNAL_ID_MAPPING.md](EXTERNAL_ID_MAPPING.md)); and, as of Phase D,
+  `agriware.uom.mapping` (database-backed unit mapping — see [UOM_MAPPING.md](UOM_MAPPING.md)).
+  Product (Phase B), warehouse (Phase C), and supplier (Phase D) synchronization are all
+  implemented — see each phase's own reference document.
+- **Security fix (post-Phase B):** a real authorization-isolation vulnerability was found and
+  fixed — an API key generated with no external-system binding could inherit authorization from an
+  unrelated bound key sharing its company, reproduced via a real HTTP request before being fixed.
+  See [PRODUCT_SYNCHRONIZATION.md's API key binding section](PRODUCT_SYNCHRONIZATION.md#api-key-binding)
+  for the full writeup. Every write endpoint built since (warehouses, suppliers) inherits the fix
+  automatically, since all of them resolve authorization the same way.
 - **Controllers (8 routes, all confirmed in code):**
   - `GET /health` — public.
   - `GET /products`, `GET /warehouses`, `GET /inventory` — **read-only**, capped at 100 records,
@@ -176,8 +183,8 @@ used in production by at least one real integration — it is **not** part of th
 | External ID mapping (WMS ID ↔ Odoo ID) | **Implemented** (Phase A — infrastructure only, no REST endpoints yet; see [EXTERNAL_ID_MAPPING.md](EXTERNAL_ID_MAPPING.md)) |
 | Create/update products via API | **Implemented** (Phase B — see [PRODUCT_SYNCHRONIZATION.md](PRODUCT_SYNCHRONIZATION.md)) |
 | Create/update warehouses via API | **Implemented** (Phase C — see [WAREHOUSE_SYNCHRONIZATION.md](WAREHOUSE_SYNCHRONIZATION.md)); existing-warehouse adoption is designed but not implemented |
-| Create/update suppliers via API | **Proposed — not implemented** |
-| Unit-of-measure mapping | **Proposed — not implemented** |
+| Create/update suppliers via API | **Implemented** (Phase D — see [SUPPLIER_SYNCHRONIZATION.md](SUPPLIER_SYNCHRONIZATION.md)); existing-partner adoption designed but not implemented |
+| Unit-of-measure mapping | **Implemented** (Phase D — see [UOM_MAPPING.md](UOM_MAPPING.md)) — database-backed, admin-managed, layered on top of Phase B's hardcoded fallback |
 | Initial inventory import / reconciliation | **Proposed — not implemented** |
 | Lot/serial support | **Proposed — not implemented** (currently explicitly rejected, by design, and that rejection stays in place until this ships — see [WMS_FIRST_INTEGRATION_PLAN.md](WMS_FIRST_INTEGRATION_PLAN.md#lot-and-batch-support)) |
 | Receipts/dispatches addressable by external ID (not just Odoo ID) | **Proposed — not implemented** |

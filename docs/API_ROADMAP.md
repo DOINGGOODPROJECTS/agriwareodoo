@@ -301,30 +301,50 @@ See [WAREHOUSE_SYNCHRONIZATION.md](WAREHOUSE_SYNCHRONIZATION.md) for the full as
 
 ### Phase D — Supplier integration and UOM mapping
 
-- **Technical tasks:** `POST`/`PATCH /suppliers` (and the `customer_rank` variant — see
-  [WMS_FIRST_INTEGRATION_PLAN.md](WMS_FIRST_INTEGRATION_PLAN.md#4-supplier-creation-and-updates));
-  the UOM mapping model and its admin-seeded lookup data.
-  <br>Also: Country lookup resolution needed for the `country_code` field (ISO 3166-1 alpha-2 codes
-  map to Odoo's own `res.country` table, which already contains this).
-- **Files likely to change:** new `controllers/suppliers.py`; new `models/uom_mapping.py`; new
-  `data/uom_mapping_data.xml` (seed data for common units: kg, ton, liter, unit, bag).
-- **Database models:** `agriware.uom.mapping` (new) — **approved as a database-backed model**, not
-  a static in-code dictionary (an earlier version of this document left that as an open
-  implementer's choice; it's since been resolved — see
-  [ARCHITECTURE.md's Approved decisions](ARCHITECTURE.md#approved-decisions), item 7). A real model
-  lets administrators extend the mapping without a code change, and gives it the same
-  company-scoping and access-control treatment as every other new model in this plan.
-- **API endpoints:** `POST /suppliers`, `PATCH /suppliers/{external_id}`.
-- **Security requirements:** `has_access()` on `res.partner`.
-- **Automated tests:** same create/update/conflict shape; a specific test for an unmapped UOM
-  code returning a clear `400`, not a silent fallback.
-- **Dependencies:** Phase A.
-- **Risks:** `res.partner` is a widely-shared model across all of Odoo (contacts, CRM, etc.) —
-  needs careful review that nothing written here leaks into unrelated Odoo features in
-  unexpected ways.
-- **Acceptance criteria:** a supplier created via the API appears correctly as a vendor option on a
-  purchase order created manually in Odoo's own UI (confirms it's a well-formed `res.partner`, not
-  a shadow record).
+**Status: IMPLEMENTED** (branch `feature/wms-supplier-uom-sync`, based on the API-key isolation
+security fix, not yet merged). See [SUPPLIER_SYNCHRONIZATION.md](SUPPLIER_SYNCHRONIZATION.md) and
+[UOM_MAPPING.md](UOM_MAPPING.md) for the full as-built reference.
+
+- **Technical tasks:** done. The `customer_rank`/`supplier_rank` variant mentioned in the original
+  plan was dropped: both fields were checked directly against this installation and found not to
+  exist (no `account`/`sale`/`purchase` module installed) — not referenced anywhere in the shipped
+  code. Country lookup resolution shipped as planned.
+- **Files changed:** `controllers/suppliers.py`, `models/uom_mapping.py`,
+  `views/uom_mapping_views.xml` (new); `controllers/__init__.py`, `models/__init__.py`,
+  `security/ir.model.access.csv`, `security/agriware_security.xml`, `__manifest__.py` (version
+  bump); `controllers/products.py` (UOM-mapping integration); `tests/test_supplier_sync.py`,
+  `tests/test_uom_mapping.py` (new); `tests/__init__.py`. No seed data file — mappings are
+  administrator-created from scratch, not pre-populated, since the whole point is that this
+  module never assumes what a "bag" weighs.
+- **Database models:** `agriware.uom.mapping` (new) — shipped as a **database-backed model**, as
+  approved (see [ARCHITECTURE.md's Approved decisions](ARCHITECTURE.md#approved-decisions), item 7).
+- **API endpoints:** `POST /suppliers`, `PATCH /suppliers/{external_id}`, plus a `GET /suppliers`
+  not originally itemized in this roadmap's Phase D row but present in the implementation task and
+  shipped, matching the read-endpoint pattern already established for products/warehouses.
+- **Security requirements:** **not** `has_access()` as originally sketched — checked empirically
+  (the same way the Phase B/C ACL gaps were found) and confirmed `res.partner` has no native
+  create/write access for the AgriWare API User group either. Rather than grant a standing
+  `ir.model.access.csv` row — which would hand the API User group broad write access to the
+  *entire* contacts/partner directory, arguably Odoo's single most widely-shared model — the
+  controller uses the same gated `sudo()` pattern as Phase C's warehouses. This directly resolves
+  the risk flagged below.
+- **Automated tests:** 29 new tests across both files — supplier creation/update/duplicate/
+  shared-partner-protection/security matrix, and UOM mapping creation/duplicate/admin-only-access/
+  `resolve_unit()` correctness/product-sync integration (including proof that a configured mapping
+  takes precedence over the hardcoded fallback, not merely supplements it). All 178 tests in the
+  module pass (149 pre-existing + 29 new).
+- **Dependencies:** Phase A — confirmed sufficient.
+- **Risks, as anticipated vs. actual:** the anticipated risk ("`res.partner` is widely-shared,
+  needs careful review") is exactly what drove the `sudo()`-over-native-ACL decision above, and is
+  additionally addressed by always creating WMS-sourced suppliers company-scoped
+  (`company_id` set, never `False`) and refusing to `PATCH` a shared (`company_id = False`) target
+  even if one is ever mapped through another path. See
+  [SUPPLIER_SYNCHRONIZATION.md's Shared partner protection](SUPPLIER_SYNCHRONIZATION.md#shared-partner-protection).
+- **Acceptance criteria:** the originally sketched criterion ("appears as a vendor option on a
+  purchase order") could not be verified as written, since this installation has no `purchase`
+  module — the equivalent, verified check instead: a supplier created via the API is a real,
+  well-formed `res.partner` row (confirmed via direct SQL, not just the API response), correctly
+  company-scoped, with its country resolved to the matching `res.country` record.
 
 ### Phase E — Initial inventory import and reconciliation
 
