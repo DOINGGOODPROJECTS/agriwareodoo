@@ -41,6 +41,8 @@ layer between an existing WMS and Odoo's Inventory app.
 | [Customer Support](docs/SUPPORT.md) | Anyone with a problem or request | How to report installation/API issues, bugs, and feature requests via GitHub Issues. |
 | [Professional Services](docs/PROFESSIONAL_SERVICES.md) | Businesses wanting paid help | What's free vs. optional paid services — installation help, custom integration, support. |
 | [Integration Services](docs/INTEGRATION_SERVICES.md) | Businesses needing a custom WMS integration | The paid integration process and a requirements questionnaire. |
+| [Guide de démarrage rapide (FR)](docs/QUICK_START_FR.md) | French-speaking users | French translation of the Quick Start Guide. |
+| [Présentation commerciale (FR)](docs/PRESENTATION_COMMERCIALE_FR.md) | French-speaking agribusinesses and Odoo partners | What the module does, who it's for, and how to request integration support, in French. |
 
 ## Project overview
 
