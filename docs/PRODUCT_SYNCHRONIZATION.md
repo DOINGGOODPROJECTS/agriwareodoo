@@ -76,22 +76,30 @@ Key** wizard's new **Authorized External System** field (Administrator-only, sam
 before) — it cannot be changed afterward on an existing key, matching how every other field on a
 generated key is already locked once created.
 
-**Critical architectural fact, verified directly against this Odoo 19 installation (not assumed):**
-Odoo's Bearer-token verification (`_check_apikey_credentials`) only ever returns *which user*
-authenticated — never *which specific key row*. Multiple `agriware.api.key` records for one
-company already share **one** integration user, by existing, unchanged, tested design (so that
-revoking one named key doesn't invalidate the others). The practical consequence:
+**Security history — a real vulnerability was found and fixed here, not just a documented
+limitation.** The first version of this feature resolved authorization from the authenticated
+*user*, not the specific key. Odoo's own Bearer-token verification
+(`_check_apikey_credentials`) only ever returns *which user* authenticated, never *which specific
+key row* — and at the time, every `agriware.api.key` for one company shared **one** integration
+user (the pre-existing, unchanged design for unbound keys). The consequence, reproduced directly
+via a real HTTP request against a disposable Odoo 19 database: a key generated with **no** binding
+authenticated a product-write request and succeeded (`201`), inheriting authorization from an
+unrelated bound key that happened to share its company. See
+[EXTERNAL_ID_MAPPING.md's API key binding section](EXTERNAL_ID_MAPPING.md#api-key-binding-reviewed-not-implemented)
+for Phase A's original deferral decision, which Phase B's first implementation (below) revisited.
 
-> **Binding is effectively a property of a company's whole shared integration identity, not of any
-> one individual named key.** If *any* key for a company is bound to an active external system,
-> *every* key sharing that company's integration identity is authorized for product writes — even
-> a key a human deliberately generated with no binding.
+**Fixed:** a key that requests a binding now gets its **own, dedicated integration user**, created
+fresh at generation time and never shared with any other key —
+`agriware.api.key._create_dedicated_integration_user()`. A bearer token now maps to exactly one
+user, which maps to exactly one key, which resolves to exactly one external system. Keys generated
+with **no** binding are entirely unaffected — they continue sharing the one per-company user
+exactly as before, since that path never changed. Re-verified directly after the fix: the same
+request that previously returned `201` for an unbound key now correctly returns `403`.
 
-This is documented here because it is genuinely easy to get wrong operationally: generating an
-"unbound" key for a limited-scope integration does **not** restrict it from product writes if the
-same company already has a different, bound key. If you need a key that's guaranteed never
-authorized for product writes, it must belong to a company (or, in a single-company setup, be the
-company's *only* key) that has no bound key at all.
+Regression tests proving this isolation live in
+`tests/test_api_key_isolation_security.py` — covering both product and warehouse endpoints,
+cross-system mapping access, and confirming the unbound-key-sharing behavior is unchanged for keys
+that never request a binding.
 
 ## Supported product fields
 
@@ -216,10 +224,6 @@ Every existing endpoint's behavior is unchanged, confirmed by the full pre-exist
 
 ## Known limitations
 
-- **API key binding is per-company-identity, not per-key** — see
-  [API key binding](#api-key-binding) above. This is a structural property of the existing,
-  unchanged authentication design, not a bug, but it is a real operational gotcha worth
-  understanding before relying on "this specific key is unbound" as a security boundary.
 - **No UOM change after creation** — `unit` is create-only; changing it later isn't implemented.
 - **No stock quantities created** — a product created here starts with zero stock everywhere; Phase
   E (initial inventory import) is the planned, not-yet-built mechanism for that.

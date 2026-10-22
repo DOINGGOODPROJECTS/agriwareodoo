@@ -175,8 +175,9 @@ piece of work, not squeezed into this phase alongside the two REST endpoints.
 - Authentication and external-system resolution are identical to Phase B: Bearer token → AgriWare
   API User group → `resolve_authorized_external_system()`, server-derived, never trusted from the
   request body. See [PRODUCT_SYNCHRONIZATION.md's API key binding](PRODUCT_SYNCHRONIZATION.md#api-key-binding)
-  for the full per-company-identity finding, which applies identically here (confirmed by this
-  phase's own `test_unbound_key_rejected` using the same dedicated-company fixture pattern).
+  for the authorization-isolation fix (each bound key gets its own dedicated integration user,
+  found necessary by a pre-Phase-D security review) — confirmed to apply identically to warehouse
+  endpoints by `tests/test_api_key_isolation_security.py`'s dedicated warehouse-side assertions.
 - **Deliberate security design difference from Phase B:** Phase B granted the AgriWare API User
   group explicit, auditable `ir.model.access.csv` rows on `product.product`/`product.template`.
   This phase does **not** grant any new `ir.model.access` rows at all. Warehouse creation cascades

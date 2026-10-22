@@ -1,3 +1,5 @@
+import uuid
+
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
 
@@ -169,6 +171,57 @@ class AgriwareApiKey(models.Model):
         return user
 
     @api.model
+    def _create_dedicated_integration_user(self, company, external_system):
+        """Create a fresh, single-purpose integration user for a key
+        bound to ``external_system``.
+
+        **Security fix, not a style choice.** Every key sharing the
+        single per-company user returned by
+        ``_get_or_create_integration_user`` shares one authentication
+        identity -- and Odoo's Bearer-token check only ever reports
+        *which user* authenticated, never which specific
+        ``res.users.apikeys`` row matched (confirmed directly against
+        this Odoo 19 installation's ``_check_apikey_credentials``).
+        Before this fix, binding *any* key for a company to an external
+        system silently authorized *every other key* sharing that
+        company's user too -- including keys deliberately generated with
+        no binding at all. Reproduced directly: an unbound key
+        authenticated a product-write request and succeeded (`201`)
+        when it should have been rejected (`403`). See
+        docs/EXTERNAL_ID_MAPPING.md's "API key binding" section for the
+        full writeup.
+
+        The fix: a key that requests a binding gets its **own** user,
+        never shared with any other key. A bearer token now maps to
+        exactly one user, which maps to exactly one ``agriware.api.key``
+        record (enforced below), which resolves to exactly one external
+        system -- the "authorized external system is derived from the
+        exact bearer token presented" property the security review
+        requires.
+
+        Unbound keys are entirely unaffected: they keep calling
+        ``_get_or_create_integration_user`` exactly as before, so this
+        fix introduces zero behavior change for any key that doesn't
+        request a binding -- including every key already covered by
+        ``test_multiple_keys_share_one_integration_identity``, which
+        never requests one.
+        """
+        api_group = self.env.ref(
+            "agriware_connector.group_agriware_api_user"
+        )
+        internal_group = self.env.ref("base.group_user")
+
+        suffix = uuid.uuid4().hex[:12]
+
+        return self.env["res.users"].sudo().create({
+            "name": f"AgriWare API Service ({company.name} / {external_system.name})",
+            "login": f"agriware-api-service-{company.id}-{suffix}@agriware.local",
+            "company_id": company.id,
+            "company_ids": [(6, 0, [company.id])],
+            "group_ids": [(6, 0, [internal_group.id, api_group.id])],
+        })
+
+    @api.model
     def generate_key(self, name, company, expiration_date=None, external_system=None):
         """Create a new AgriWare API key for ``company``.
 
@@ -194,7 +247,17 @@ class AgriwareApiKey(models.Model):
                 "company as the API key."
             ))
 
-        integration_user = self._get_or_create_integration_user(company)
+        # Security fix: a key requesting a binding must never share an
+        # integration user with any other key -- see
+        # _create_dedicated_integration_user()'s docstring for why.
+        # Unbound keys are unaffected, continuing to share the one
+        # per-company user exactly as before.
+        if external_system:
+            integration_user = self._create_dedicated_integration_user(
+                company, external_system
+            )
+        else:
+            integration_user = self._get_or_create_integration_user(company)
 
         ApiKeys = self.env["res.users.apikeys"]
 
