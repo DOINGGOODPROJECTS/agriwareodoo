@@ -1,0 +1,304 @@
+import type { Dictionary } from "@/types/content";
+
+const GITHUB_REPO = "https://github.com/DOINGGOODPROJECTS/agriwareodoo";
+const DOCS_BASE = `${GITHUB_REPO}/blob/19.0/docs`;
+
+export const en: Dictionary = {
+  meta: {
+    siteName: "AgriWare Connector",
+    home: {
+      title: "AgriWare Connector — Odoo Warehouse Integration (Free & Open-Source)",
+      description:
+        "Free, open-source Odoo 19 application connecting compatible external warehouse management systems (WMS) to Odoo Inventory via a documented REST API.",
+    },
+    product: {
+      title: "Product Overview — AgriWare Connector",
+      description:
+        "Odoo 19 compatibility, REST API capabilities, authentication, supported operations, and current limitations of AgriWare Connector.",
+    },
+    services: {
+      title: "Professional Services — AgriWare Connector",
+      description:
+        "Optional, paid professional services for AgriWare Connector: installation, WMS integration, custom adapters, workflow customization, and support.",
+    },
+    documentation: {
+      title: "Documentation — AgriWare Connector",
+      description: "Installation guides, API reference, and support resources for AgriWare Connector.",
+    },
+    contact: {
+      title: "Contact — AgriWare Connector Integration Support",
+      description: "Request integration support for AgriWare Connector.",
+    },
+  },
+  nav: {
+    home: "Home",
+    product: "Product",
+    services: "Services",
+    documentation: "Documentation",
+    contact: "Contact",
+    downloadFree: "Download Free",
+    switchLabel: "Français",
+  },
+  footer: {
+    tagline: "A free, open-source Odoo 19 application connecting external WMS software to Odoo Inventory.",
+    freeOpenSource: "Free and open-source (LGPL-3.0) — no license fee, ever.",
+    githubLabel: "View source on GitHub",
+    rights: "This website promotes AgriWare Connector; it is independent of the Odoo addon itself.",
+  },
+  home: {
+    hero: {
+      headline: "Connect Your Warehouse Management System to Odoo",
+      subheadline:
+        "AgriWare Connector is a free, open-source integration application that enables compatible external warehouse management systems to exchange inventory information with Odoo 19.",
+      downloadCta: "Download Free",
+      requestCta: "Request Integration Support",
+    },
+    problem: {
+      title: "The Problem",
+      intro: "Many agribusinesses run their warehouse operations and their ERP as two disconnected systems.",
+      items: [
+        "Disconnected warehouse and ERP systems, each with its own view of stock",
+        "Repeated manual data entry — the same receipt or dispatch typed twice",
+        "Inventory information spread across systems with no single source of truth",
+        "Difficulty integrating existing WMS software with Odoo without custom development",
+      ],
+    },
+    solution: {
+      title: "The Solution",
+      description:
+        "AgriWare Connector exposes a REST API on top of Odoo 19 Inventory. Your existing WMS calls this API to read product, warehouse, and stock data, and to create and validate receipts and dispatches.",
+      diagram: {
+        wms: "External WMS",
+        api: "REST API",
+        connector: "AgriWare Connector",
+        odoo: "Odoo 19 Inventory",
+      },
+      initiatedNote:
+        "Every request is initiated by the external WMS. AgriWare Connector never calls out to your WMS — there is no scheduled or automatic synchronization.",
+    },
+    features: {
+      title: "Key Features",
+      items: [
+        "Product information retrieval",
+        "Warehouse information retrieval",
+        "Inventory visibility (on-hand stock)",
+        "Incoming receipts — create and validate",
+        "Outgoing dispatches — create and validate",
+        "Self-service API key management",
+        "Bearer-token authentication and role-based access control",
+      ],
+    },
+    howItWorks: {
+      title: "How It Works",
+      steps: [
+        "Install AgriWare Connector from the Odoo Apps Marketplace.",
+        "Generate an API key from AgriWare Connector → API Management.",
+        "Configure your existing, compatible external WMS with the API base URL and key.",
+        "Exchange supported warehouse information: products, warehouses, inventory, receipts, and dispatches.",
+      ],
+    },
+    services: {
+      title: "Professional Services",
+      intro:
+        "AgriWare Connector itself is always free. For businesses that want hands-on help, optional paid services are available separately.",
+      items: [
+        { name: "Odoo Installation and Configuration", description: "Getting AgriWare Connector installed and configured on your Odoo 19 instance." },
+        { name: "WMS Integration", description: "Connecting your specific WMS to the documented REST API." },
+        { name: "Custom WMS Adapter Development", description: "Building a translation layer for a WMS that doesn't speak the API natively." },
+        { name: "Technical Support and Maintenance", description: "Ongoing assistance beyond best-effort community support." },
+      ],
+      link: "See all professional services",
+    },
+    cta: {
+      title: "Ready to connect your warehouse to Odoo?",
+      description: "The application is free to download and self-host. Integration help is optional.",
+      downloadCta: "Download Free",
+      requestCta: "Request Integration Support",
+    },
+  },
+  product: {
+    title: "Product Overview",
+    intro:
+      "AgriWare Connector integrates an existing, compatible external WMS with Odoo 19's Inventory app through a REST API.",
+    overview: {
+      title: "What it is",
+      body: "AgriWare Connector is not itself a warehouse management system. It does not manage racking, picking routes, or barcode scanning hardware — it is the integration layer between an existing WMS and Odoo's Inventory app. The external WMS calls this API to read Odoo's product, warehouse, and stock data, and to push incoming receipts and outgoing dispatches into Odoo's standard stock workflow.",
+    },
+    version: {
+      title: "Supported Odoo version",
+      body: "Odoo 19. AgriWare Connector depends on four Odoo Community Association (OCA) modules — component, component_event, connector, and queue_job — which are bundled inside the Odoo Apps Marketplace download, so no separate installation step is needed for a marketplace install.",
+    },
+    architecture: {
+      title: "Integration architecture",
+      body: "Every request in this integration is initiated by the external WMS; Odoo never calls out to the WMS. All data ultimately lives in Odoo's own PostgreSQL database — AgriWare Connector adds no separate datastore.",
+      diagram: {
+        wms: "External WMS",
+        api: "HTTPS + API key",
+        connector: "AgriWare Connector",
+        odoo: "Odoo 19 Inventory",
+        db: "PostgreSQL",
+      },
+    },
+    api: {
+      title: "REST API capabilities",
+      body: "AgriWare Connector exposes a versioned REST API rooted at /agriware/api/v1. All controller-level responses share a consistent {\"status\": \"success\" | \"error\", ...} shape.",
+      capabilities: [
+        "GET /health — public health check, no authentication required",
+        "GET /products — retrieve up to 100 products",
+        "GET /warehouses — retrieve warehouses",
+        "GET /inventory — retrieve on-hand stock quantities",
+        "POST /receipts and /receipts/{id}/validate — create and validate incoming receipts",
+        "POST /dispatches and /dispatches/{id}/validate — create and validate outgoing dispatches",
+      ],
+    },
+    auth: {
+      title: "Authentication and access control",
+      body: "Every protected endpoint requires an Authorization: Bearer header carrying a real Odoo API key. Keys are generated and managed self-service, inside Odoo, by users in the AgriWare Administrator group — no developer involvement needed. The authenticated key's underlying user must also belong to the AgriWare API User group to call the API. API key records are isolated per company by record rules.",
+    },
+    operations: {
+      title: "Supported inventory operations",
+      items: [
+        "Read product, warehouse, and inventory data",
+        "Create a draft incoming receipt, then validate it against received quantities",
+        "Create a draft outgoing dispatch, then validate it against dispatched quantities",
+        "Duplicate-transaction protection via a PostgreSQL advisory lock on each external reference",
+      ],
+    },
+    limitations: {
+      title: "Current limitations",
+      items: [
+        "No pagination on the products, warehouses, or inventory list endpoints (capped at 100 records)",
+        "No per-warehouse access control within a company",
+        "Partial receipts and partial dispatches are not supported — quantities must match exactly",
+        "Lot/serial-tracked products are not supported",
+        "No automatic or scheduled synchronization — every request is initiated by the external WMS",
+        "No built-in, WMS-specific adapters — this is one generic REST API",
+      ],
+    },
+    screenshots: {
+      title: "Screenshots",
+      items: [
+        {
+          src: "/images/screenshot_apps_listing.png",
+          alt: "AgriWare Connector listed in Odoo's Apps screen",
+          caption: "AgriWare Connector listed in Odoo's Apps screen.",
+        },
+        {
+          src: "/images/screenshot_api_management.png",
+          alt: "AgriWare Connector API Management screen listing a self-service API key",
+          caption:
+            "The API Management screen, where an authorized business user generates, views, and revokes their own API keys.",
+        },
+        {
+          src: "/images/screenshot_api_health.png",
+          alt: "AgriWare Connector REST API health check response",
+          caption: "The REST API's health check endpoint, confirmed live and responding.",
+        },
+      ],
+    },
+  },
+  services: {
+    title: "Professional Services",
+    intro:
+      "AgriWare Connector's software is, and always will be, free and open-source. These optional, paid services are performed by people, for businesses that want hands-on help beyond what's in the documentation.",
+    freeNote:
+      "Nothing below unlocks functionality that is otherwise withheld — every documented REST API capability is already free. These are services, not software license tiers.",
+    packages: [
+      {
+        name: "1. Odoo Installation and Configuration",
+        description:
+          "Installing AgriWare Connector and its bundled OCA dependencies on your Odoo 19 instance, assigning user permissions, and generating the first API key.",
+      },
+      {
+        name: "2. Basic WMS Integration",
+        description:
+          "Configuring your existing WMS against AgriWare Connector's REST API when it already speaks a compatible protocol, and validating the connection end-to-end.",
+      },
+      {
+        name: "3. Custom WMS Adapter Development",
+        description:
+          "Building a translation layer between your WMS's native protocol and AgriWare Connector's REST API, for WMS software that can't speak it directly.",
+      },
+      {
+        name: "4. Inventory Workflow Customization",
+        description:
+          "Adapting how receipts and dispatches map to your specific operational process, within what Odoo's stock workflow supports.",
+      },
+      {
+        name: "5. Technical Support and Maintenance",
+        description:
+          "Ongoing, dedicated assistance beyond best-effort community support, for businesses that want continuity after their integration is live.",
+      },
+    ],
+    optionalNote: "Every service above is entirely optional. Using AgriWare Connector yourself, for free, remains fully supported.",
+    noPricingNote:
+      "Pricing is discussed per request and depends on scope — no price list is published here.",
+    cta: "Request Integration Support",
+  },
+  documentation: {
+    title: "Documentation",
+    intro:
+      "Full documentation lives in the project's GitHub repository, alongside the source code.",
+    links: [
+      {
+        label: "Installation Guide",
+        href: `${DOCS_BASE}/INSTALLATION.md`,
+        description: "Step-by-step install instructions for business users, no Odoo development experience required.",
+        external: true,
+      },
+      {
+        label: "Quick Start Guide",
+        href: `${DOCS_BASE}/QUICK_START.md`,
+        description: "The fastest path through the whole workflow, with a minimal working example.",
+        external: true,
+      },
+      {
+        label: "Guide de démarrage rapide (French)",
+        href: `${DOCS_BASE}/QUICK_START_FR.md`,
+        description: "French translation of the Quick Start Guide.",
+        external: true,
+      },
+      {
+        label: "WMS Integration Guide",
+        href: `${DOCS_BASE}/WMS_INTEGRATION.md`,
+        description: "Architecture, authentication, every endpoint with request/response examples, and error handling.",
+        external: true,
+      },
+      {
+        label: "API Reference",
+        href: `${DOCS_BASE}/API.md`,
+        description: "The complete, field-by-field technical specification of every endpoint.",
+        external: true,
+      },
+      {
+        label: "Customer Support",
+        href: `${DOCS_BASE}/SUPPORT.md`,
+        description: "How to report installation/API issues, bugs, and feature requests.",
+        external: true,
+      },
+    ],
+  },
+  contact: {
+    title: "Contact — Integration Support",
+    intro:
+      "Use this form to describe your integration needs. Fields marked are used to assess technical compatibility before any work is proposed.",
+    formDisabledTitle: "Form submission is not yet connected",
+    formDisabledBody:
+      "This form validates your input, but sending it is not yet enabled — no backend or form-delivery service has been configured for this site yet. Submitting will not send your information anywhere. Until this is enabled, please use the contact channel below instead.",
+    fields: {
+      companyName: "Company name",
+      contactName: "Contact name",
+      email: "Business email",
+      country: "Country",
+      existingErp: "Existing ERP",
+      existingWms: "Existing WMS",
+      requiredIntegration: "Required integration",
+      projectDescription: "Project description",
+    },
+    submit: "Submit (not yet available)",
+    privacyTitle: "Privacy",
+    privacyBody:
+      "This form does not store any data in your browser or transmit it anywhere while submission is disabled. Once a real delivery method is configured, this notice will be updated to explain exactly what happens to submitted information.",
+    alternateContact: "In the meantime, see the Customer Support guide for how to reach the project on GitHub.",
+  },
+};
