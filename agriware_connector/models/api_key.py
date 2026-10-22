@@ -108,6 +108,36 @@ class AgriwareApiKey(models.Model):
                     "same company as the API key."
                 ))
 
+    @api.constrains("integration_user_id", "external_system_id")
+    def _check_dedicated_identity_for_bound_keys(self):
+        """Defense-in-depth for the authorization-isolation fix in
+        generate_key(): a bound key's integration_user_id must never be
+        shared with any other agriware.api.key record, bound or not.
+
+        generate_key() itself already guarantees this for every key it
+        creates (a bound key always gets a freshly-created, never-reused
+        user). This constraint exists for paths that bypass generate_key()
+        entirely -- a direct ORM write (e.g. from a future migration
+        script, or an administrator using Odoo's developer tools) that
+        tried to reuse an existing user for a bound key, or to bind a
+        key that still shares the old per-company shared user. Either
+        would silently reintroduce the exact vulnerability fixed above.
+        """
+        for record in self:
+            if not record.external_system_id or not record.integration_user_id:
+                continue
+
+            sharing = self.sudo().search([
+                ("integration_user_id", "=", record.integration_user_id.id),
+                ("id", "!=", record.id),
+            ])
+            if sharing:
+                raise ValidationError(_(
+                    "A key bound to an external system must have its "
+                    "own dedicated integration identity -- it cannot "
+                    "share an integration user with any other API key."
+                ))
+
     def _check_can_manage(self, company=None):
         """Raise unless the current user is an AgriWare Administrator for
         ``company`` (or, called on a recordset, for every record's
