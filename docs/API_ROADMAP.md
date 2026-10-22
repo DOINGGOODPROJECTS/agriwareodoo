@@ -254,18 +254,50 @@ silent precedence rule.
 
 ### Phase C — Warehouse creation and mapping
 
-- **Technical tasks:** `POST`/`PATCH /warehouses` controllers, same shape as Phase B.
-- **Files likely to change:** new `controllers/warehouses.py`.
-- **Database models:** none new.
-- **API endpoints:** `POST /warehouses`, `PATCH /warehouses/{external_id}`.
-- **Security requirements:** `has_access()` on `stock.warehouse`.
-- **Automated tests:** same shape as Phase B's.
-- **Dependencies:** Phase A.
-- **Risks:** `stock.warehouse` creation triggers Odoo to auto-create several related records
-  (picking types, default locations) — needs explicit testing that this doesn't produce surprises
-  for a WMS creating many warehouses in a batch.
-- **Acceptance criteria:** a new warehouse created via the API has working `in_type_id`/`out_type_id`
-  picking types, verified by successfully creating a receipt against it in the same test.
+**Status: IMPLEMENTED** (branch `feature/wms-warehouse-sync`, based on Phase B, not yet merged).
+See [WAREHOUSE_SYNCHRONIZATION.md](WAREHOUSE_SYNCHRONIZATION.md) for the full as-built reference.
+
+- **Technical tasks:** done, plus one addition not originally scoped: existing-warehouse adoption
+  (reviewed per the task's own Phase 9, designed in detail, deliberately **not** implemented — the
+  task explicitly permits documenting rather than shipping an unsafe shortcut).
+- **Files changed:** `controllers/warehouses.py` (new); `controllers/__init__.py`;
+  `tests/test_warehouse_sync.py` (new); `tests/__init__.py`; `__manifest__.py` (version bump). No
+  `security/ir.model.access.csv` changes — see Security requirements below for why this phase
+  deliberately diverged from Phase B's pattern there.
+- **Database models:** none new — reuses `stock.warehouse` and Phase A's mapping model, as planned.
+- **API endpoints:** `POST /warehouses`, `PATCH /warehouses/{external_id}`, exactly as planned.
+  `code` ended up excluded from `PATCH` (see Risks).
+- **Security requirements:** **not** `has_access()` as originally sketched. `stock.warehouse`
+  creation cascades into `stock.location`, `stock.picking.type`, `stock.route`, `stock.rule`, and
+  `ir.sequence` — confirmed by reading `stock.warehouse.create()` directly — and none of those
+  models has any native create access for the AgriWare API User group (verified empirically,
+  the same way the Phase B product.template gap was found). Granting broad access across all of
+  them to match Phase B's pattern would hand the API User group standing write access to routing/
+  picking-type configuration, which Phase 7 explicitly forbids. Instead: the controller performs
+  the same explicit auth + resolved-external-system check as every other write endpoint, then calls
+  `stock.warehouse.sudo().create(...)` — a single, narrow, already-gated operation, not a general
+  capability. See [WAREHOUSE_SYNCHRONIZATION.md's Security section](WAREHOUSE_SYNCHRONIZATION.md#security)
+  for the full reasoning.
+- **Automated tests:** 26 new tests — creation, native location/picking-type generation, update,
+  duplicate name/code/external_id handling (three distinct conflict sources, not one), the
+  `code`-immutability rejection, the full API-key-binding security matrix, cross-company isolation,
+  and confirmation that Phase A/B's existing endpoints and tests are entirely unaffected. All 132
+  tests in the module pass (106 pre-existing + 26 new) — notably, **zero failures on the first full
+  run**, unlike Phase B, because the product.template-style ACL lesson was checked for up front
+  before writing the controller rather than discovered by a failing test.
+- **Dependencies:** Phase A — confirmed sufficient.
+- **Risks, as anticipated vs. actual:** anticipated "needs explicit testing that auto-created
+  records don't produce surprises" — confirmed true and tested directly (real `stock_location` and
+  picking-type rows verified via SQL, not just trusted from the API response). One risk not
+  anticipated in the original sketch: `code` changes after creation turned out to be a genuine
+  data-integrity hazard (a warehouse's auto-generated locations are named from its code at creation
+  time, with no re-propagation on a later change) — resolved by excluding `code` from `PATCH`
+  entirely, per the task's own "reject the change rather than risk data corruption" instruction.
+- **Acceptance criteria:** met, and demonstrated live — see
+  [WAREHOUSE_SYNCHRONIZATION.md's Verification performed](WAREHOUSE_SYNCHRONIZATION.md#verification-performed)
+  for the real HTTP sequence (create Anyama Warehouse → update it → repeat the create → `409`) with
+  direct PostgreSQL verification that the native location tree and picking types genuinely exist,
+  not just that the warehouse row does.
 
 ### Phase D — Supplier integration and UOM mapping
 

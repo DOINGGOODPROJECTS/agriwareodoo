@@ -9,3 +9,4 @@ from . import test_menu_visibility
 from . import test_external_systems
 from . import test_external_id_mapping
 from . import test_product_sync
+from . import test_warehouse_sync

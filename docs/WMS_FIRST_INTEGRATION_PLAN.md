@@ -103,12 +103,19 @@ the sketch below is preserved for history but the shipped allow-list differs sli
 
 ### 3. Warehouse creation and mapping
 
+**Status: IMPLEMENTED** (Phase C, branch `feature/wms-warehouse-sync`) — see
+[WAREHOUSE_SYNCHRONIZATION.md](WAREHOUSE_SYNCHRONIZATION.md) for the authoritative, as-built
+reference. One refinement over this sketch: `PATCH` excludes `code`, not just the
+routes/resupply/valuation fields anticipated here — changing a warehouse's code after its
+locations and sequences are already named from it was identified as unsafe during design, not
+merely out of scope.
+
 - `POST /agriware/api/v1/warehouses` creates a `stock.warehouse`.
 - Allow-listed fields: `name`, `code`.
 - **Not exposed:** anything related to multi-step routes, resupply rules, or accounting valuation
   settings tied to the warehouse — those remain Odoo/operations-team-configured, since they affect
   how Odoo's own stock engine behaves internally, not just data mirroring.
-- `PATCH /agriware/api/v1/warehouses/{external_id}` — same pattern as products.
+- `PATCH /agriware/api/v1/warehouses/{external_id}` — same pattern as products, minus `code`.
 
 ### 4. Supplier creation and updates
 
