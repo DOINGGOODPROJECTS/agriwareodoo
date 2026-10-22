@@ -37,6 +37,10 @@ layer between an existing WMS and Odoo's Inventory app.
 | [Installation Guide](docs/INSTALLATION.md) | Business users, no Odoo dev experience required | Downloading the marketplace package (which bundles its own OCA dependencies), assigning permissions, generating a key, and testing the connection. |
 | [WMS Integration Guide](docs/WMS_INTEGRATION.md) | Developers configuring the WMS side | Architecture, authentication, every endpoint with request/response examples, idempotency, and error handling. |
 | [API Reference](docs/API.md) | Developers | The complete, field-by-field technical specification of every endpoint. |
+| [Customer Onboarding](docs/CUSTOMER_ONBOARDING.md) | New customers | A 9-step checklist from download to operational use, linking into the guides above. |
+| [Customer Support](docs/SUPPORT.md) | Anyone with a problem or request | How to report installation/API issues, bugs, and feature requests via GitHub Issues. |
+| [Professional Services](docs/PROFESSIONAL_SERVICES.md) | Businesses wanting paid help | What's free vs. optional paid services — installation help, custom integration, support. |
+| [Integration Services](docs/INTEGRATION_SERVICES.md) | Businesses needing a custom WMS integration | The paid integration process and a requirements questionnaire. |
 
 ## Project overview
 
@@ -379,7 +383,8 @@ fee, ever.
 - Custom feature development
 
 These services are entirely optional. Businesses only pay AgriWare if they choose to use one of
-them; the software itself remains free either way.
+them; the software itself remains free either way. Full details, and how to request a service:
+[docs/PROFESSIONAL_SERVICES.md](docs/PROFESSIONAL_SERVICES.md).
 
 ## Known limitations
 
@@ -451,9 +456,9 @@ LGPL-3.0. See [LICENSE](LICENSE).
 
 ## Professional services
 
-For custom WMS integration, installation and configuration help, WMS adapter development,
-technical support, or other custom development (see
-[Free software and paid services](#free-software-and-paid-services)), open an issue on the GitHub
-repository:
-
-https://github.com/DOINGGOODPROJECTS/agriwareodoo
+AgriWare Connector itself is always free — optional paid services (installation help, custom WMS
+integration, adapter development, technical support) are available separately. See
+[docs/PROFESSIONAL_SERVICES.md](docs/PROFESSIONAL_SERVICES.md) for what's included, and
+[docs/INTEGRATION_SERVICES.md](docs/INTEGRATION_SERVICES.md) for how to request a custom WMS
+integration specifically. For bug reports, questions, or feature requests, see
+[docs/SUPPORT.md](docs/SUPPORT.md).
