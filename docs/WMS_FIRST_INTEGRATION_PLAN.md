@@ -214,6 +214,30 @@ existing Odoo mechanism rather than inventing an approval workflow from scratch.
   import batch needs batch-level traceability that per-quant `create_date`/`write_uid` alone
   doesn't give an operator trying to answer "what did last Tuesday's import actually contain?"
 
+### Correction (Phase E, as-built): the mechanism above does not do what this plan assumed
+
+**The code example above is wrong, and was corrected by reading Odoo 19's actual
+`stock/models/stock_quant.py` before implementing Phase E, not by assuming this plan's earlier
+"already verified working" note still held.** `stock.quant`'s `inventory_quantity` field has an
+inverse method, `_set_inventory_quantity()`, whose own docstring says plainly: "Inverse method to
+create stock move when `inventory_quantity` is set." Tracing it directly: setting that field while
+`inventory_mode` context is active calls `action_apply_inventory()` **synchronously, in the same
+write** — there is no intermediate "counted, not yet applied" persisted state to stop at. The
+`# NOTE: action_apply_inventory() is deliberately NOT called by the API` comment above describes
+code that would still apply the adjustment anyway, just from inside a method this module never
+calls directly — the application happens inside Odoo's own field-write plumbing instead, which is
+not actually safer.
+
+**What Phase E shipped instead:** `agriware.inventory.import`/`agriware.inventory.import.line` (not
+`agriware.inventory.import.log`, and not touching `stock.quant` at all until a human later works
+inside Odoo's own Physical Inventory screen by hand) — a plain staging area that only ever *reads*
+`stock.quant.quantity`, never writes `inventory_quantity` or any other quant field. See
+[INITIAL_INVENTORY_IMPORT.md's Native adjustment handoff](INITIAL_INVENTORY_IMPORT.md#native-adjustment-handoff-phase-11--deferred-by-design-not-by-oversight)
+for the full reasoning and the resulting Known limitation (the apply step is manual, not automated,
+in this phase). The duplicate-prevention and validate-before-write design elements above carried
+over to the as-built version unchanged; the audit-logging and mechanism paragraphs above are
+superseded by the correction in this section.
+
 ## Lot and batch support
 
 **The current, explicit rejection of lot/serial-tracked products stays exactly as it is until this

@@ -123,31 +123,41 @@ Query parameters: `product_external_id` (optional filter). Response `200`:
 
 ### `POST /agriware/api/v1/inventory-adjustments`
 
+**Status: IMPLEMENTED** as sketched below, with field names corrected to match what actually
+shipped — see [INITIAL_INVENTORY_IMPORT.md](INITIAL_INVENTORY_IMPORT.md) for the full as-built
+reference (the sketch originally in this section used `counted_quantity` and a
+`agriware.inventory.import.log` model name; the shipped implementation uses `quantity`/`unit` and
+`agriware.inventory.import` — documented here as the correction it is, not silently).
+
 Request:
 ```json
 {
-  "external_reference": "AGRIWARE-ADJ-2026-10-01",
-  "warehouse_external_id": "WMS-WH-ANYAMA",
+  "external_reference": "INITIAL-2026-001",
+  "warehouse_external_id": "WH-001",
   "lines": [
-    {"product_external_id": "WMS-PRODUCT-001", "counted_quantity": 5000}
+    {"product_external_id": "AGRI-001", "quantity": 5000, "unit": "kg"}
   ]
 }
 ```
-Response `201` (adjustment recorded, **not yet applied** — see
-[WMS_FIRST_INTEGRATION_PLAN.md](WMS_FIRST_INTEGRATION_PLAN.md#initial-inventory-import)):
+Response `201` (import staged, **not yet applied** — see
+[INITIAL_INVENTORY_IMPORT.md's Native adjustment handoff](INITIAL_INVENTORY_IMPORT.md#native-adjustment-handoff-phase-11--deferred-by-design-not-by-oversight)):
 ```json
 {
   "status": "success",
-  "import_log_id": 9,
-  "external_reference": "AGRIWARE-ADJ-2026-10-01",
-  "state": "pending_approval",
-  "lines_recorded": 1
+  "import_id": 7,
+  "external_reference": "INITIAL-2026-001",
+  "state": "pending_review",
+  "lines": [
+    {"product_external_id": "AGRI-001", "reported_quantity": 5000.0, "current_odoo_quantity": 2000.0, "proposed_difference": 3000.0}
+  ]
 }
 ```
-Response `409` (duplicate `external_reference`):
+Response `409` (duplicate `external_reference` with different content):
 ```json
-{"status": "error", "message": "external_reference already submitted", "import_log_id": 9}
+{"status": "error", "message": "external_reference already used with different content", "import_id": 7}
 ```
+An identical retry of the same `external_reference` returns `200` with the existing import
+(idempotent), not `409` — see [Idempotency](INITIAL_INVENTORY_IMPORT.md#idempotency-phase-13).
 
 ### Additive fields on existing endpoints (no new routes)
 
@@ -348,30 +358,56 @@ security fix, not yet merged). See [SUPPLIER_SYNCHRONIZATION.md](SUPPLIER_SYNCHR
 
 ### Phase E — Initial inventory import and reconciliation
 
-- **Technical tasks:** `POST /inventory-adjustments`; the `agriware.inventory.import.log` model;
-  the `inventory_mode` quant-creation logic (not `action_apply_inventory()` — see
-  [WMS_FIRST_INTEGRATION_PLAN.md](WMS_FIRST_INTEGRATION_PLAN.md#initial-inventory-import)).
-- **Files likely to change:** new `controllers/inventory_adjustments.py`; new
-  `models/inventory_import_log.py`; a view for the Odoo-side approval screen (reusing Odoo's native
-  Inventory Adjustments UI — likely no new view needed at all, just confirming the native one shows
-  these correctly).
-- **Database models:** `agriware.inventory.import.log` (new).
-- **API endpoints:** `POST /inventory-adjustments`.
-- **Security requirements:** `has_access('create')` on `stock.quant`; company-scoped warehouse
-  resolution identical to receipts/dispatches.
-- **Automated tests:** batch validated-before-write (an invalid line fails the whole batch);
-  duplicate `external_reference` rejection; confirmation that `action_apply_inventory()` is never
-  called by the controller itself; confirmation a human applying it manually afterward produces the
-  expected `stock.move`.
-- **Dependencies:** Phases A, B (products must resolve via external ID), C (warehouses).
-- **Risks:** **the highest-risk phase in this roadmap.** A bug here risks corrupting real inventory
-  counts for a production business. Recommend this phase gets the most test coverage and the most
-  cautious rollout (e.g., require the approval step for every batch, with no "auto-apply" flag at
-  all in the first version, even as an option).
-- **Acceptance criteria:** a 50-line test batch is submitted, appears as pending differences in
-  Odoo's native Inventory Adjustments screen, and after a human clicks Apply there, stock
-  quantities match the submitted counts exactly — with zero direct `stock.quant.quantity` writes
-  anywhere in the code path (verified by code review, not just testing).
+**Status: IMPLEMENTED** (branch `feature/wms-inventory-import`, based on Phase D, not yet merged).
+See [INITIAL_INVENTORY_IMPORT.md](INITIAL_INVENTORY_IMPORT.md) for the full as-built reference.
+
+- **Technical tasks:** done, with one real correction to this roadmap's own original sketch: the
+  sketch assumed the `inventory_mode` quant-creation path (setting `inventory_quantity` on a quant)
+  would *stage* a count for later separate application. Reading Odoo 19's actual
+  `stock/models/stock_quant.py` directly shows this is wrong — that field's inverse method calls
+  `action_apply_inventory()` **synchronously, in the same write**, whenever `inventory_mode` context
+  is active; there is no native "staged but not applied" state to hook into at all. The native
+  handoff is therefore fully manual in this phase — see
+  [INITIAL_INVENTORY_IMPORT.md's Native adjustment handoff](INITIAL_INVENTORY_IMPORT.md#native-adjustment-handoff-phase-11--deferred-by-design-not-by-oversight)
+  for the complete reasoning, confirmed against source rather than assumed.
+- **Files changed:** `models/inventory_import.py` (new — `agriware.inventory.import` +
+  `agriware.inventory.import.line`, not `agriware.inventory.import.log` as originally sketched);
+  `controllers/inventory_import.py` (new); `models/__init__.py`, `controllers/__init__.py`;
+  `security/ir.model.access.csv`, `security/agriware_security.xml`; `views/inventory_import_views.xml`
+  (new — an Odoo-native review screen under Inventory → Operations, not a REST `GET`/`PATCH`);
+  `__manifest__.py` (version bump); `tests/test_inventory_import.py` (new); `tests/__init__.py`.
+- **Database models:** `agriware.inventory.import`, `agriware.inventory.import.line` (both new).
+- **API endpoints:** `POST /inventory-adjustments` only — deliberately no `GET`/`PATCH`; review
+  happens in Odoo's own backend, matching the UOM Mappings precedent from Phase D.
+- **Security requirements:** not `has_access('create')` on `stock.quant` as originally sketched —
+  `stock.quant` is far too broad/sensitive a model for a standing grant (same reasoning as Phase
+  C/D). The controller uses the same gated `sudo()` pattern instead; approving/rejecting a staged
+  import is restricted to Odoo's own native `stock.group_stock_manager` (Inventory Manager), reused
+  rather than inventing a parallel authorization concept.
+- **Automated tests:** 27 new tests — valid import, multiple lines, unknown product/warehouse,
+  invalid/incompatible unit, negative quantity, idempotent duplicate vs. conflicting duplicate, a
+  forced-race test at the model level, cross-company/cross-system isolation, the full API-key
+  security matrix, lot/serial rejection, location-ambiguity (proving only `lot_stock_id` is ever
+  used), reconciliation arithmetic (existing stock, zero stock), stale-data detection across a real
+  state transition, unauthorized approval, rejection, a direct assertion that `stock.quant.quantity`
+  is bit-for-bit unchanged after both creation and approval, and existing-endpoint compatibility.
+  All tests in the module pass against a fresh database — see the Phase E final report for the
+  exact total.
+- **Dependencies:** Phases A, B (products), C (warehouses), D (UOM mapping) — confirmed sufficient.
+- **Risks, as anticipated vs. actual:** the anticipated risk ("highest-risk phase... a bug here
+  risks corrupting real inventory counts") is exactly why the native-handoff investigation above
+  was done *before* writing any quant-touching code, not after — and it's exactly what led to
+  **not** shipping any automated handoff at all this phase, per the task's own explicit permission
+  to defer rather than ship an unsafe shortcut. The no-auto-apply recommendation is met by
+  construction: there is no code path in this phase that can apply an adjustment, automatically or
+  otherwise.
+- **Acceptance criteria:** the originally sketched criterion (apply via Odoo's native screen, stock
+  matches exactly) could not be demonstrated as a single automated test, since the apply step is
+  manual by design — instead, verified directly: a batch is submitted, staged with the correct
+  computed difference, confirmed to leave `stock.quant.quantity` completely unchanged, and a
+  deliberate real-stock change before review is confirmed to move the import to `stale` rather than
+  let it be approved against outdated numbers. See
+  [INITIAL_INVENTORY_IMPORT.md's Verification performed](INITIAL_INVENTORY_IMPORT.md#verification-performed).
 
 ### Phase F — Lot and batch integration
 
