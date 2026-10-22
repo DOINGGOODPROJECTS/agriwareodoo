@@ -1,0 +1,84 @@
+# Quick Start Guide
+
+The fastest path to understanding how AgriWare Connector fits together. For full detail, see
+[INSTALLATION.md](INSTALLATION.md) (step-by-step setup) and [WMS_INTEGRATION.md](WMS_INTEGRATION.md)
+(full developer integration guide).
+
+## The basic workflow
+
+```text
+INSTALL AGRIWARE CONNECTOR
+          |
+          v
+ASSIGN USER PERMISSIONS
+          |
+          v
+GENERATE API KEY
+          |
+          v
+CONFIGURE EXTERNAL WMS
+          |
+          v
+TEST API CONNECTION
+          |
+          v
+EXCHANGE WAREHOUSE DATA
+```
+
+1. **Install AgriWare Connector** — from the Odoo Apps marketplace, into your Odoo 19 instance
+   (along with its required OCA dependencies). See [INSTALLATION.md](INSTALLATION.md#1-download-agriware-connector-from-odoo-apps).
+2. **Assign user permissions** — grant the **AgriWare Administrator** access right to whoever will
+   manage API keys. See [INSTALLATION.md](INSTALLATION.md#4-assign-the-appropriate-user-permissions).
+3. **Generate an API key** — from **AgriWare Connector → API Management → Generate API Key**,
+   choosing an expiration date or **Never Expires**. See
+   [INSTALLATION.md](INSTALLATION.md#6-generate-an-api-key).
+4. **Configure your external WMS** — with your Odoo instance's base URL
+   (`https://YOUR_ODOO_URL/agriware/api/v1`) and the API key, using Bearer-token authentication.
+5. **Test the API connection** — confirm both the health check and an authenticated call succeed
+   (example below).
+6. **Exchange warehouse data** — your WMS calls the REST API to read products/warehouses/inventory
+   and to create and validate receipts and dispatches. See
+   [WMS_INTEGRATION.md](WMS_INTEGRATION.md) for the full set of operations.
+
+## A minimal example: authenticating against the products endpoint
+
+Using placeholder values — replace them with your own instance URL and a real generated key (never
+commit real values for these):
+
+```bash
+export ODOO_URL="https://YOUR_ODOO_URL"
+export API_KEY="YOUR_API_KEY"
+
+curl -s "$ODOO_URL/agriware/api/v1/products" \
+  -H "Authorization: Bearer $API_KEY"
+```
+
+Expected response:
+
+```json
+{
+  "status": "success",
+  "count": 2,
+  "products": [
+    {"id": 14, "name": "Urea 50kg Bag", "default_code": "FERT-UREA-50", "barcode": "6161100000012", "active": true},
+    {"id": 15, "name": "Maize Seed 25kg Bag", "default_code": "SEED-MAIZE-25", "barcode": "", "active": true}
+  ]
+}
+```
+
+If you get a `401` HTML page instead of this JSON, double-check the Bearer token — see
+[INSTALLATION.md's Troubleshooting section](INSTALLATION.md#troubleshooting).
+
+## What AgriWare Connector is not
+
+- It is not a WMS itself — it's the integration layer between your existing WMS and Odoo Inventory.
+- It does not push data to your WMS on a schedule — every exchange is initiated by your WMS calling
+  the REST API.
+- It does not auto-resolve partial receipts/dispatches or lot/serial tracking yet — see
+  [WMS_INTEGRATION.md's Known limitations](WMS_INTEGRATION.md#known-limitations).
+
+## Next steps
+
+- Full installation walkthrough: [INSTALLATION.md](INSTALLATION.md)
+- Full developer integration guide: [WMS_INTEGRATION.md](WMS_INTEGRATION.md)
+- Complete API reference: [API.md](API.md)

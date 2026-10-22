@@ -11,22 +11,32 @@ layer between an existing WMS and Odoo's Inventory app.
 
 ## Table of contents
 
-1. [Project overview](#project-overview)
-2. [Who it is for](#who-it-is-for)
-3. [Key features](#key-features)
-4. [How AgriWare Connector works](#how-agriware-connector-works)
-5. [System architecture](#system-architecture)
-6. [Installation](#installation)
-7. [API key management](#api-key-management)
-8. [Connecting an existing WMS](#connecting-an-existing-wms)
-9. [Supported API operations](#supported-api-operations)
-10. [Security](#security)
-11. [Free software and paid services](#free-software-and-paid-services)
-12. [Known limitations](#known-limitations)
-13. [Development and testing](#development-and-testing)
-14. [Contributing](#contributing)
-15. [License](#license)
-16. [Professional services](#professional-services)
+1. [Documentation](#documentation)
+2. [Project overview](#project-overview)
+3. [Who it is for](#who-it-is-for)
+4. [Key features](#key-features)
+5. [How AgriWare Connector works](#how-agriware-connector-works)
+6. [System architecture](#system-architecture)
+7. [Installation](#installation)
+8. [API key management](#api-key-management)
+9. [Connecting an existing WMS](#connecting-an-existing-wms)
+10. [Supported API operations](#supported-api-operations)
+11. [Security](#security)
+12. [Free software and paid services](#free-software-and-paid-services)
+13. [Known limitations](#known-limitations)
+14. [Development and testing](#development-and-testing)
+15. [Contributing](#contributing)
+16. [License](#license)
+17. [Professional services](#professional-services)
+
+## Documentation
+
+| Guide | For | Covers |
+|---|---|---|
+| [Quick Start Guide](docs/QUICK_START.md) | Everyone | The shortest path through the whole workflow, with a minimal working example. |
+| [Installation Guide](docs/INSTALLATION.md) | Business users, no Odoo dev experience required | Downloading, installing OCA dependencies, assigning permissions, generating a key, and testing the connection. |
+| [WMS Integration Guide](docs/WMS_INTEGRATION.md) | Developers configuring the WMS side | Architecture, authentication, every endpoint with request/response examples, idempotency, and error handling. |
+| [API Reference](docs/API.md) | Developers | The complete, field-by-field technical specification of every endpoint. |
 
 ## Project overview
 
