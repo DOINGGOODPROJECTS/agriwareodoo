@@ -451,21 +451,47 @@ See [INITIAL_INVENTORY_IMPORT.md](INITIAL_INVENTORY_IMPORT.md) for the full as-b
 
 ### Phase G — Transaction integration enhancements
 
-- **Technical tasks:** the additive `*_external_id` fields on `POST /receipts`/`/dispatches`
-  (independent of lots — this is the general "resolve by external ID instead of Odoo ID" feature
-  for warehouse/supplier/customer/product references).
-- **Files likely to change:** `controllers/receipts.py`, `controllers/dispatches.py`.
-- **Database models:** none new.
-- **API endpoints:** no new routes — additive optional fields only on existing ones.
-- **Security requirements:** no change beyond what Phases A-D already established (resolution
-  reuses the same mapping lookups).
-- **Automated tests:** a test matrix of "numeric ID only" (today's behavior, must be unchanged), 
-  "external ID only" (new), and "both provided" (`400`, explicit conflict).
-- **Dependencies:** Phases A-D.
-- **Risks:** low, if Phases A-D are solid — this phase is mostly wiring.
-- **Acceptance criteria:** an existing WMS integration using only numeric IDs continues to work with
-  zero code changes on its side; a new WMS-first integration can create a receipt referencing only
-  external IDs it created in earlier phases, never touching an Odoo-internal number.
+**Status: IMPLEMENTED** (branch `feature/wms-transaction-sync`, based on Phase F, not yet merged).
+See [WMS_TRANSACTION_SYNCHRONIZATION.md](WMS_TRANSACTION_SYNCHRONIZATION.md) for the full as-built
+reference.
+
+- **Technical tasks:** done, shaped differently than this sketch assumed — not additive
+  `*_external_id` fields alongside the existing `products[]` array, but a second, parallel request
+  shape (`lines[]` instead of `products[]`) on the same route, since the new schema also needed
+  `unit` and `lot_external_id` per line that the original array had no place for. Both shapes are
+  accepted on the same `POST`, discriminated by which top-level key is present.
+- **Files changed:** `controllers/receipts.py`, `controllers/dispatches.py` (both substantially
+  extended, legacy code path preserved verbatim inside its own method); `controllers/receipt_validation.py`,
+  `controllers/dispatch_validation.py` (one small fix — see Risks); `models/wms_transaction.py`
+  (new); `models/__init__.py`, `security/ir.model.access.csv`, `security/agriware_security.xml`,
+  `__manifest__.py` (version bump); `tests/test_transaction_sync.py` (new); `tests/__init__.py`.
+- **Database models:** `agriware.wms.transaction` (new) — not originally scoped in this sketch
+  ("none new"), added because the existing advisory-lock/`origin`-match duplicate protection has no
+  real database-level uniqueness and no `external_system_id` dimension; see
+  [WMS_TRANSACTION_SYNCHRONIZATION.md's Transaction identity](WMS_TRANSACTION_SYNCHRONIZATION.md#transaction-identity)
+  for the full reasoning.
+- **API endpoints:** no new routes for creation (confirmed, as sketched) — but two new routes were
+  added beyond this sketch's scope: `GET /receipts/{external_reference}` and
+  `GET /dispatches/{external_reference}` (Phase G's own task specification, section 7).
+- **Security requirements:** as sketched — the new path reuses the exact same mapping-lookup
+  resolution as Phases A-F; the legacy path requires no external-system binding at all, unchanged.
+- **Automated tests:** 32 new tests — the "numeric only / external-ID only / both provided" matrix
+  this sketch anticipated, plus idempotency, conflict, a forced-race test, the full security matrix,
+  status retrieval, lot/serial-tracked transactions, partial-transaction rejection (confirmed not to
+  create a backorder), and existing-endpoint compatibility. All tests in the module pass against a
+  fresh database — see the Phase G final report for the exact total.
+- **Dependencies:** Phases A-D — confirmed sufficient, plus Phase F for lot resolution.
+- **Risks, as anticipated vs. actual:** anticipated "low... mostly wiring" — mostly true, but one
+  real compatibility bug surfaced only by testing, not by code review: `/validate`'s existing guard
+  checked only for the legacy `AGRIWARE-RCPT-`/`AGRIWARE-DISP-` prefix, which a Phase G
+  `external_reference` would never match — a WMS-first receipt could be created but never
+  validated. Fixed by also recognizing a real `agriware.wms.transaction` row as proof of
+  AgriWare ownership.
+- **Acceptance criteria:** met, and demonstrated live — see
+  [WMS_TRANSACTION_SYNCHRONIZATION.md's Verification performed](WMS_TRANSACTION_SYNCHRONIZATION.md#verification-performed):
+  an existing numeric-ID integration (the full pre-Phase-G test suite) continues to pass unchanged;
+  a new WMS-first integration created, retrieved, and validated a receipt and a dispatch using only
+  external IDs, confirmed via direct SQL.
 
 ### Phase H — ERP workflow integration testing
 

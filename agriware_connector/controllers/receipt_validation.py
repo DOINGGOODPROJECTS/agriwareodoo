@@ -202,8 +202,20 @@ class AgriwareReceiptValidationAPI(http.Controller):
                     "message": "Only draft receipts can be validated",
                 }, 409)
 
-            # This API must not validate unrelated Odoo receipts.
-            if not external_reference.startswith("AGRIWARE-RCPT-"):
+            # This API must not validate unrelated Odoo receipts. A
+            # legacy receipt is recognized by its fixed prefix; a Phase G
+            # WMS-first receipt (whose external_reference the WMS chose
+            # itself, with no fixed prefix) is recognized instead by
+            # having a real agriware.wms.transaction row -- it could only
+            # have gotten one by being created through this module's own
+            # WMS-first creation path.
+            is_legacy_agriware_receipt = external_reference.startswith("AGRIWARE-RCPT-")
+            is_wms_first_receipt = bool(env["agriware.wms.transaction"].sudo().search_count([
+                ("transaction_type", "=", "receipt"),
+                ("external_reference", "=", external_reference),
+                ("picking_id", "=", receipt.id),
+            ]))
+            if not is_legacy_agriware_receipt and not is_wms_first_receipt:
                 return self.json_response({
                     "status": "error",
                     "message": "Receipt is not managed by AgriWare",

@@ -55,10 +55,12 @@ Verified by reading `agriware_connector/controllers/`, `agriware_connector/model
   as of Phase E, `agriware.inventory.import`/`.line` (staged WMS stock observations — see
   [INITIAL_INVENTORY_IMPORT.md](INITIAL_INVENTORY_IMPORT.md)). Phase F adds no new model of its
   own — it reuses Odoo's native `stock.lot` directly, mapped through the same Phase A service (see
-  [LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md)).
+  [LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md)). As of Phase G,
+  `agriware.wms.transaction` (receipt/dispatch identity for the new WMS-first creation path — see
+  [WMS_TRANSACTION_SYNCHRONIZATION.md](WMS_TRANSACTION_SYNCHRONIZATION.md)).
   Product (Phase B), warehouse (Phase C), supplier (Phase D), initial inventory import (Phase E),
-  and lot/serial synchronization (Phase F) are all implemented — see each phase's own reference
-  document.
+  lot/serial synchronization (Phase F), and WMS-first receipt/dispatch synchronization (Phase G)
+  are all implemented — see each phase's own reference document.
 - **Security fix (post-Phase B):** a real authorization-isolation vulnerability was found and
   fixed — an API key generated with no external-system binding could inherit authorization from an
   unrelated bound key sharing its company, reproduced via a real HTTP request before being fixed.
@@ -192,7 +194,7 @@ used in production by at least one real integration — it is **not** part of th
 | Unit-of-measure mapping | **Implemented** (Phase D — see [UOM_MAPPING.md](UOM_MAPPING.md)) — database-backed, admin-managed, layered on top of Phase B's hardcoded fallback |
 | Initial inventory import / reconciliation | **Implemented** (Phase E — see [INITIAL_INVENTORY_IMPORT.md](INITIAL_INVENTORY_IMPORT.md)) — staged and human-reviewed only; native apply-to-stock handoff is manual, by design, not automated |
 | Lot/serial support | **Implemented** (Phase F — see [LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md)); the blanket rejection of a tracked product with no lot_external_id remains in place unchanged — only a product whose line now names its lot/serial is accepted |
-| Receipts/dispatches addressable by external ID (not just Odoo ID) | **Proposed — not implemented** |
+| Receipts/dispatches addressable by external ID (not just Odoo ID) | **Implemented** (Phase G — see [WMS_TRANSACTION_SYNCHRONIZATION.md](WMS_TRANSACTION_SYNCHRONIZATION.md)); additive alongside the original numeric-ID schema, which is unchanged |
 
 ### Security model (current, extended by proposal)
 

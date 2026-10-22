@@ -317,6 +317,24 @@ is sound and **is not being changed**. What changes is purely additive:
   external-ID-resolved moves still go through the exact same `stock.move` creation path that
   exists today, just with an extra resolution step before it.
 
+### Correction (Phase G, as-built)
+
+Mostly built as sketched above, with two corrections:
+
+- **Not field-level substitution on the existing `products[]` array** — the shipped schema is a
+  second, parallel `lines[]` array on the same route, since it also needed `unit` and
+  `lot_external_id` per line, which `products[]` had no place for. "Numeric takes precedence if
+  both are sent" was replaced with a simpler, equally-safe rule: sending both `products` and
+  `lines` at the top level is rejected outright (`400`) rather than given an implicit precedence
+  order.
+- **Idempotency did gain a second concept, deliberately, for the new path only**: the legacy
+  `products[]` schema's advisory-lock/`origin`-match mechanism is untouched, exactly as promised
+  above. The new `lines[]` schema uses a real `agriware.wms.transaction` row with a database unique
+  constraint instead, because it also needed to support `GET` status retrieval by
+  `(company, external_system, external_reference)` — a lookup the legacy mechanism was never
+  designed to serve. See
+  [WMS_TRANSACTION_SYNCHRONIZATION.md's Transaction identity](WMS_TRANSACTION_SYNCHRONIZATION.md#transaction-identity).
+
 ## Security and multi-company design
 
 Every new model and endpoint follows the existing, verified pattern rather than inventing a new

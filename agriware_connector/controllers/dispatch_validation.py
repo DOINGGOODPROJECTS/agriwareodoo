@@ -210,8 +210,17 @@ class AgriwareDispatchValidationAPI(http.Controller):
                     "Only draft dispatches are supported", 409
                 )
 
-            # This API must not validate unrelated Odoo deliveries.
-            if not external_reference.startswith("AGRIWARE-DISP-"):
+            # This API must not validate unrelated Odoo deliveries. See
+            # receipt_validation.py's identical guard for the full
+            # reasoning (legacy fixed prefix, or a real Phase G
+            # agriware.wms.transaction row).
+            is_legacy_agriware_dispatch = external_reference.startswith("AGRIWARE-DISP-")
+            is_wms_first_dispatch = bool(env["agriware.wms.transaction"].sudo().search_count([
+                ("transaction_type", "=", "dispatch"),
+                ("external_reference", "=", external_reference),
+                ("picking_id", "=", dispatch.id),
+            ]))
+            if not is_legacy_agriware_dispatch and not is_wms_first_dispatch:
                 return error_response(
                     "Dispatch is not managed by AgriWare", 403
                 )
