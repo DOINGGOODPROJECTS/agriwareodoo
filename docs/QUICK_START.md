@@ -75,8 +75,10 @@ If you get a `401` HTML page instead of this JSON, double-check the Bearer token
 - It is not a WMS itself — it's the integration layer between your existing WMS and Odoo Inventory.
 - It does not push data to your WMS on a schedule — every exchange is initiated by your WMS calling
   the REST API.
-- It does not auto-resolve partial receipts/dispatches or lot/serial tracking yet — see
-  [WMS_INTEGRATION.md's Known limitations](WMS_INTEGRATION.md#known-limitations).
+- It does not auto-resolve partial receipts/dispatches — quantities must match exactly. (Lot/serial
+  tracking **is** supported, as of Phase F — see
+  [LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md).) See
+  [WMS_INTEGRATION.md's Known limitations](WMS_INTEGRATION.md#known-limitations) for the full list.
 
 ## Next steps
 

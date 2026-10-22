@@ -203,3 +203,33 @@ real Odoo API keys, the AgriWare API User/Administrator group split, company-sco
 controller-level `has_access()` checks before any write (exactly as `receipts.py` already does for
 `stock.picking`/`stock.move`). Full detail on how this extends to the new models and endpoints is
 in [WMS_FIRST_INTEGRATION_PLAN.md](WMS_FIRST_INTEGRATION_PLAN.md#security-and-multi-company-design).
+
+### Multi-company behavior — what's shared vs. isolated (verified directly, Phase H)
+
+**This is a deliberate architectural choice, not an oversight, and it's worth stating plainly
+rather than leaving a customer to discover it by testing:**
+
+| Data | Behavior | Why |
+|---|---|---|
+| Products | **Shared across every company in the database** (`company_id = False`, Phase B's own choice) | A product catalog is treated as a single shared master-data concept, the same way Odoo itself treats `company_id = False` records as globally visible by its own native semantics — this module did not invent that rule, it chose to use it. |
+| Warehouses | **Company-isolated** (always created with a real `company_id`) | A warehouse is physically one company's facility; Odoo's own native multi-company record rule restricts visibility to the caller's own companies. |
+| Suppliers | **Company-isolated** (always created with a real `company_id`; a genuinely shared supplier can never be modified through the API) | A supplier relationship belongs to one company's accounts payable, never shared. |
+| Lots | **Company-isolated** (always created with a real `company_id`) | A lot represents a specific company's physical batch of goods. |
+| Inventory imports / WMS transactions | **Company- and external-system-isolated** (every lookup is scoped to `(company, external_system)`) | These are per-integration audit records, never meant to be visible outside the integration that created them. |
+| External-ID mappings | **Company- and external-system-isolated**, for every record type including products | Even though the underlying *product* may be shared, the *mapping* from a given WMS's own external ID to that product is scoped to the company and external system that created it — a different company mapping its own `"PROD-001"` to the same (or a different) shared product does not see or collide with another company's mapping. |
+
+**Confirmed live, not assumed:** a second test company, with its own independently-generated,
+correctly-bound API key, successfully listed the first company's complete product catalog via
+`GET /products` — the request was properly authenticated and properly scoped by every check this
+module performs; it succeeded because products are *supposed* to be visible that way, not because
+an isolation check failed. The same key could **not** see the first company's warehouses, read or
+modify its suppliers or lots, or resolve its transaction-status lookups (`404` in every case).
+
+**Shared-hosting implication, stated directly:** this design fits a single business group running
+multiple legal entities on one Odoo database — a shared product catalog across subsidiaries is
+often exactly what such a group wants. It is **not** currently suitable, without further scoping
+work, for hosting two unrelated, mutually-distrusting customers in the same database: Company B
+would be able to read Company A's complete product list (names, internal codes, barcodes) simply
+by having any valid, properly-authorized API key of its own. **No change to the product data model
+is proposed here** — this is a documentation of existing, tested behavior for a future architectural
+review to weigh, not an engineering recommendation to act on now.
