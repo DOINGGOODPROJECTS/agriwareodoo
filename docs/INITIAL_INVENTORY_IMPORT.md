@@ -6,6 +6,10 @@ WMS-first roadmap — see
 [API_ROADMAP.md](API_ROADMAP.md#phase-e--initial-inventory-import-and-reconciliation) for where
 this fits.
 
+**Update (Phase F):** `lines[].lot_external_id` (optional) was added on top of everything below —
+see [LOT_BATCH_SYNCHRONIZATION.md's Lot-level inventory import integration](LOT_BATCH_SYNCHRONIZATION.md#lot-level-inventory-import-integration-extends-phase-e).
+Everything in this document remains accurate for lines that don't use it.
+
 ## What this is, and what it deliberately is not
 
 A WMS can submit its own count of what it believes is on hand for a product at a warehouse.
@@ -42,6 +46,7 @@ constraint, the import's identity (Phase 13).
 | Field | Type | Notes |
 |---|---|---|
 | `product_id`, `location_id` | Many2one | |
+| `lot_id` | Many2one `stock.lot`, optional | Set only for a lot/serial-tracked product line (Phase F). Reconciliation is then scoped to the exact `(product, location, lot)` triple. |
 | `uom_id` | Many2one `uom.uom` | The **product's own** unit — both quantity fields below are expressed in it, never in the WMS's raw unit. |
 | `external_unit_code` | Char | The WMS's raw unit code, preserved verbatim for audit. |
 | `original_reported_quantity` | Float | The quantity exactly as submitted, in `external_unit_code`, before normalization — preserved for audit (Phase 8) even though it is `reported_quantity` below that reconciliation actually uses. |

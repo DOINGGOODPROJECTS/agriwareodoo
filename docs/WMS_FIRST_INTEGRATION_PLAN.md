@@ -267,6 +267,36 @@ change to that behavior is proposed for earlier phases.
   raw ORM exception); a lot cannot be referenced on a quantity that would exceed what's recorded
   against it, reusing Odoo's own stock-move validation rather than re-implementing quantity checks.
 
+### Correction (Phase F, as-built): what actually shipped, and one real technical finding
+
+Mostly built as sketched above, with small, worth-recording corrections:
+
+- **Error codes:** "lot belongs to a different product" surfaces as `422` (not `400`/`409` as
+  guessed above) — consistent with how every other "well-formed request, semantically rejected"
+  case in this module is coded (e.g. Phase E's incompatible-UOM rejection).
+- **`GET /lots` has no product filter** — it lists everything visible to the caller's company,
+  capped at 100, exactly like every other `GET` endpoint already does; a filter wasn't needed and
+  wasn't built, keeping this endpoint identical in shape to `GET /products`/`GET /warehouses`.
+- **Receiving a lot was exactly as simple as sketched** — set `move.move_line_ids.lot_id` after the
+  existing `move.quantity = ...` assignment, relying entirely on Odoo's own `_check_lot_product`
+  constraint.
+- **Dispatching from a specific lot was not as simple as sketched, and required reading Odoo 19's
+  actual reservation code before writing anything.** The generic `action_assign()` call this plan
+  assumed would "just work" picks whichever lot Odoo's own removal strategy prefers — not
+  necessarily the one the WMS named. The as-built controller instead calls
+  `stock.move._update_reserved_quantity(need, location_id, lot_id=..., strict=True)` — a real,
+  public Odoo primitive for reserving an exact quantity from an exact lot, confirmed by reading
+  `stock/models/stock_move.py` directly — before the normal reservation pass runs. See
+  [LOT_BATCH_SYNCHRONIZATION.md's Dispatches section](LOT_BATCH_SYNCHRONIZATION.md#dispatches-outgoing--the-one-place-this-phase-had-to-go-past-just-set-a-field)
+  for the full reasoning. This is still "the exact same `stock.move` creation path that exists
+  today," as this plan promised — just invoked with an extra, explicit step for the lot-pinning
+  case, not a parallel mechanism.
+- **Resolving a lot requires a bound API key**, exactly like every other mapping-touching
+  capability in this module — not mentioned explicitly in the original sketch above, but a direct
+  consequence of reusing `agriware.external.id.mapping`, which is itself always
+  `(company, external_system)`-scoped. A legacy caller that never sends `lot_external_id` never
+  triggers that requirement, preserving the backward compatibility this plan promised.
+
 ## Transaction review — receipts and dispatches
 
 Reviewed directly against `receipts.py`, `dispatches.py`, `receipt_validation.py`,

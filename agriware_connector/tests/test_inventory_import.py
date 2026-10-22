@@ -21,6 +21,17 @@ class TestAgriwareInventoryImport(AgriwareApiCommon):
         admin_group = cls.env.ref("agriware_connector.group_agriware_administrator")
         manager_group = cls.env.ref("stock.group_stock_manager")
 
+        # AgriwareApiCommon's shared fixtures default to Odoo's base
+        # "Units" UOM -- this suite's payloads use "kg" throughout
+        # (matching the task's own example payloads), so the fixture
+        # products must actually be kg-based or every request would be
+        # correctly rejected as an incompatible-unit mismatch (exactly
+        # the check Phase E's UOM compatibility logic exists to enforce).
+        kg = cls.env.ref("uom.product_uom_kgm")
+        cls.product.uom_id = kg
+        cls.lot_tracked_product.uom_id = kg
+        cls.serial_tracked_product.uom_id = kg
+
         cls.external_system = cls.env["agriware.external.system"].sudo().create({
             "name": "Primary WMS", "code": "primary_wms_e", "company_id": cls.env.company.id,
         })
@@ -137,6 +148,7 @@ class TestAgriwareInventoryImport(AgriwareApiCommon):
     def test_multiple_import_lines(self):
         second_product = self.env["product.product"].sudo().create({
             "name": "AgriWare Second Product", "type": "consu", "is_storable": True,
+            "uom_id": self.env.ref("uom.product_uom_kgm").id,
         })
         self.env["agriware.external.id.mapping"].sudo().create({
             "company_id": self.env.company.id, "external_system_id": self.external_system.id,

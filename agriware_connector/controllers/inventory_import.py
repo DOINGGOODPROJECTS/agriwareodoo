@@ -7,13 +7,14 @@ import psycopg2
 from odoo import http
 from odoo.http import request, Response
 from odoo.exceptions import AccessError, ValidationError
+from odoo.tools.float_utils import float_compare
 from .api_security import require_agriware_api_user, resolve_authorized_external_system
 from .products import SUPPORTED_UNITS as HARDCODED_UNITS
 
 _logger = logging.getLogger(__name__)
 
 TOP_LEVEL_ALLOWED_FIELDS = {"external_reference", "warehouse_external_id", "lines"}
-LINE_ALLOWED_FIELDS = {"product_external_id", "quantity", "unit"}
+LINE_ALLOWED_FIELDS = {"product_external_id", "quantity", "unit", "lot_external_id"}
 
 # Mirrors receipts.py's existing cap on a single request's line count.
 MAX_LINES = 500
@@ -177,6 +178,13 @@ class AgriwareInventoryImportAPI(http.Controller):
                 return self.json_response(
                     {"status": "error", "message": "Invalid unit"}, 400,
                 )
+            if "lot_external_id" in line and (
+                not isinstance(line["lot_external_id"], str)
+                or not line["lot_external_id"].strip()
+            ):
+                return self.json_response(
+                    {"status": "error", "message": "Invalid lot_external_id"}, 400,
+                )
 
         try:
             env = request.env
@@ -248,16 +256,57 @@ class AgriwareInventoryImportAPI(http.Controller):
                         "message": "Product not found: %s" % product_external_id,
                     }, 404)
 
-                # Phase 14: lot/serial-tracked products are out of scope
-                # until Phase F -- reject the whole import rather than
-                # silently aggregating lot-level stock into one number.
+                lot_external_id = line.get("lot_external_id")
+                if isinstance(lot_external_id, str):
+                    lot_external_id = lot_external_id.strip()
+
+                resolved_lot = env["stock.lot"].browse()
                 if product.tracking != "none":
+                    # Phase F: a lot/serial-tracked product line is only
+                    # accepted when it names the exact lot/serial it was
+                    # observed in -- never aggregated across lots. A
+                    # tracked product with no lot_external_id is still
+                    # rejected exactly as it was in Phase E, unchanged.
+                    if not lot_external_id:
+                        return self.json_response({
+                            "status": "error",
+                            "message": (
+                                "Product %s requires lot/serial tracking; "
+                                "lot_external_id is required for this line." % product_external_id
+                            ),
+                        }, 422)
+
+                    lot_mapping = Mapping.resolve_mapping(
+                        company, external_system, "stock.lot", lot_external_id,
+                    )
+                    if not lot_mapping:
+                        return self.json_response({
+                            "status": "error",
+                            "message": "Lot not found: %s" % lot_external_id,
+                        }, 404)
+                    resolved_lot = env["stock.lot"].sudo().browse(lot_mapping.res_id)
+                    if not resolved_lot.exists() or (
+                        resolved_lot.company_id and resolved_lot.company_id != company
+                    ):
+                        return self.json_response({
+                            "status": "error",
+                            "message": "Lot not found: %s" % lot_external_id,
+                        }, 404)
+                    if resolved_lot.product_id != product:
+                        return self.json_response({
+                            "status": "error",
+                            "message": (
+                                "Lot %s does not belong to product %s" % (
+                                    lot_external_id, product_external_id,
+                                )
+                            ),
+                        }, 422)
+                elif lot_external_id:
                     return self.json_response({
                         "status": "error",
                         "message": (
-                            "Product %s requires lot/serial tracking; "
-                            "lot-level inventory import is not supported "
-                            "until Phase F." % product_external_id
+                            "Product %s is not lot/serial-tracked; "
+                            "lot_external_id is not applicable" % product_external_id
                         ),
                     }, 422)
 
@@ -303,14 +352,34 @@ class AgriwareInventoryImportAPI(http.Controller):
                     quantity, product_uom, round=True,
                 )
 
-                current_qty = sum(env["stock.quant"].sudo().search([
+                # Phase F, Step 5: a serial number identifies exactly one
+                # individual unit -- a serial-tracked line can never
+                # represent more (or less) than 1 of the product's own
+                # unit, regardless of what the WMS's raw unit/quantity
+                # said before normalization.
+                if product.tracking == "serial" and float_compare(
+                    normalized_quantity, 1.0, precision_rounding=product_uom.rounding,
+                ) != 0:
+                    return self.json_response({
+                        "status": "error",
+                        "message": (
+                            "Serial %s represents exactly one unit; got a "
+                            "normalized quantity of %s" % (lot_external_id, normalized_quantity)
+                        ),
+                    }, 422)
+
+                quant_domain = [
                     ("product_id", "=", product.id),
                     ("location_id", "=", location.id),
-                ]).mapped("quantity"))
+                ]
+                if resolved_lot:
+                    quant_domain.append(("lot_id", "=", resolved_lot.id))
+                current_qty = sum(env["stock.quant"].sudo().search(quant_domain).mapped("quantity"))
 
                 line_values.append((0, 0, {
                     "product_id": product.id,
                     "location_id": location.id,
+                    "lot_id": resolved_lot.id if resolved_lot else False,
                     "uom_id": product_uom.id,
                     "external_unit_code": unit_code,
                     "original_reported_quantity": quantity,

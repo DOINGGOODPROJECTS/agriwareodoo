@@ -92,32 +92,41 @@ Same partial-update shape as products/warehouses, allow-listed fields only.
 
 ### `POST /agriware/api/v1/lots`
 
+**Status: IMPLEMENTED** as sketched below, with two corrections to match what actually shipped —
+see [LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md) for the full as-built reference.
+First, there is no `external_system` field in the request body at all: like every other write
+endpoint in this module, the external system is derived server-side from the authenticated API
+key's own binding (`resolve_authorized_external_system()`), never trusted from the client — the
+original sketch's `external_system` field would have let a caller claim a system it wasn't actually
+authorized for. Second, `GET` takes no query parameters in this phase (no `product_external_id`
+filter) — it lists everything visible to the caller's company, capped at 100, matching every other
+`GET` endpoint's existing pattern exactly.
+
 Request:
 ```json
 {
-  "external_system": "primary_wms",
-  "external_id": "WMS-LOT-2026-0042",
-  "product_external_id": "WMS-PRODUCT-001",
-  "name": "LOT-0042"
+  "external_id": "LOT-001",
+  "product_external_id": "AGRI-001",
+  "name": "COCOA-2026-001"
 }
 ```
 Response `201`:
 ```json
-{"status": "success", "lot_id": 15, "external_id": "WMS-LOT-2026-0042", "product_id": 101}
+{"status": "success", "lot_id": 42, "external_id": "LOT-001", "name": "COCOA-2026-001", "product_external_id": "AGRI-001"}
 ```
 Response `404` (product external_id not found):
 ```json
-{"status": "error", "message": "No product mapped for product_external_id"}
+{"status": "error", "message": "Product not found"}
 ```
 
 ### `GET /agriware/api/v1/lots`
 
-Query parameters: `product_external_id` (optional filter). Response `200`:
+Response `200`:
 ```json
 {
   "status": "success",
   "count": 1,
-  "lots": [{"lot_id": 15, "external_id": "WMS-LOT-2026-0042", "product_id": 101, "product_external_id": "WMS-PRODUCT-001"}]
+  "lots": [{"id": 42, "name": "COCOA-2026-001", "product_id": 101, "ref": ""}]
 }
 ```
 
@@ -161,16 +170,23 @@ An identical retry of the same `external_reference` returns `200` with the exist
 
 ### Additive fields on existing endpoints (no new routes)
 
-`POST /receipts`, `POST /dispatches`, and their `/validate` counterparts gain **optional**
-alternative identifier fields, used only if the corresponding numeric field is absent:
+`POST /receipts`, `POST /dispatches`, and their `/validate` counterparts were proposed to gain
+**optional** alternative identifier fields, used only if the corresponding numeric field is absent:
 
-| Existing numeric field | New optional alternative |
-|---|---|
-| `warehouse_id` | `warehouse_external_id` |
-| `supplier_id` | `supplier_external_id` |
-| `customer_id` | `customer_external_id` |
-| `products[].product_id` | `products[].product_external_id` |
-| *(new)* | `products[].lot_external_id` (optional, only for lot-tracked products once Phase F ships) |
+| Existing numeric field | New optional alternative | Status |
+|---|---|---|
+| `warehouse_id` | `warehouse_external_id` | Proposed — not implemented |
+| `supplier_id` | `supplier_external_id` | Proposed — not implemented |
+| `customer_id` | `customer_external_id` | Proposed — not implemented |
+| `products[].product_id` | `products[].product_external_id` | Proposed — not implemented |
+| `received_quantities[].product_id` / `dispatched_quantities[].product_id` (on `/validate` only) | `lot_external_id` | **Implemented** (Phase F — see [LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md#receipt-and-dispatch-integration)) |
+
+**Correction:** Phase F shipped `lot_external_id` only on the `/validate` endpoints' line items
+(`received_quantities`/`dispatched_quantities`), matching where quantities and lot assignment
+actually happen in the existing flow — not on the `products[]` array of the initial `POST`
+`/receipts`/`/dispatches` (which only ever carries the expected quantity, not what lot it arrived
+in). The rest of this table's external-ID-everywhere proposal for receipts/dispatches'
+*creation* endpoints remains unimplemented, as before.
 
 Sending both the numeric and external-ID form for the same field is a caller error (`400`), not a
 silent precedence rule.

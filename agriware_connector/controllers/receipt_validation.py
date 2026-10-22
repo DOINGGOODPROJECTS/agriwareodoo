@@ -5,7 +5,8 @@ import math
 from odoo import http
 from odoo.http import request, Response
 from odoo.exceptions import AccessError, UserError, ValidationError
-from .api_security import require_agriware_api_user
+from odoo.tools.float_utils import float_compare
+from .api_security import require_agriware_api_user, resolve_authorized_external_system
 
 _logger = logging.getLogger(__name__)
 
@@ -88,6 +89,7 @@ class AgriwareReceiptValidationAPI(http.Controller):
             }, 400)
 
         quantities = {}
+        lot_external_ids = {}
 
         for line in received_quantities:
             if not isinstance(line, dict):
@@ -98,6 +100,7 @@ class AgriwareReceiptValidationAPI(http.Controller):
 
             product_id = line.get("product_id")
             quantity = line.get("quantity")
+            lot_external_id = line.get("lot_external_id")
 
             if (
                 type(product_id) is not int
@@ -113,7 +116,17 @@ class AgriwareReceiptValidationAPI(http.Controller):
                     "message": "Invalid or duplicate product quantity",
                 }, 400)
 
+            if lot_external_id is not None and (
+                not isinstance(lot_external_id, str) or not lot_external_id.strip()
+            ):
+                return self.json_response({
+                    "status": "error",
+                    "message": "Invalid lot_external_id",
+                }, 400)
+
             quantities[product_id] = quantity
+            if lot_external_id:
+                lot_external_ids[product_id] = lot_external_id.strip()
 
         try:
             env = request.env
@@ -221,17 +234,94 @@ class AgriwareReceiptValidationAPI(http.Controller):
                     "message": "Received products do not match receipt",
                 }, 400)
 
-            for move in moves:
-                quantity = quantities[move.product_id.id]
-
-                # Matches the same guard on dispatch validation: lot/serial
-                # assignment isn't supported by this API yet, so neither
-                # direction can be validated for a tracked product.
-                if move.product_id.tracking != "none":
+            # Phase F: resolving a lot requires knowing which external
+            # system this request is authorized for -- the same
+            # resolution every lot/mapping-touching endpoint uses.
+            # Legacy callers that never send lot_external_id never reach
+            # this (resolve_authorized_external_system() is only called
+            # when at least one line actually used the new field), so
+            # an integration that doesn't use lots is entirely unaffected
+            # even if its key happens to be unbound.
+            external_system = None
+            if lot_external_ids:
+                try:
+                    external_system = resolve_authorized_external_system()
+                except ValidationError as exc:
+                    return self.json_response(
+                        {"status": "error", "message": str(exc)}, 403,
+                    )
+                if not external_system or external_system.company_id != receipt.company_id:
                     return self.json_response({
                         "status": "error",
-                        "message": "Lot or serial tracking is not supported yet",
-                    }, 409)
+                        "message": (
+                            "This API key is not authorized for lot-tracked "
+                            "receipts on this company."
+                        ),
+                    }, 403)
+
+            Mapping = env["agriware.external.id.mapping"]
+            resolved_lots = {}
+
+            for move in moves:
+                product = move.product_id
+                quantity = quantities[product.id]
+                lot_external_id = lot_external_ids.get(product.id)
+
+                if product.tracking != "none":
+                    # Matches the original guard on dispatch validation:
+                    # a tracked product can only be validated when the
+                    # WMS names the exact lot/serial it was received
+                    # under -- never silently aggregated or left unset.
+                    if not lot_external_id:
+                        return self.json_response({
+                            "status": "error",
+                            "message": "Lot or serial tracking is not supported yet",
+                        }, 409)
+
+                    lot_mapping = Mapping.resolve_mapping(
+                        receipt.company_id, external_system, "stock.lot", lot_external_id,
+                    )
+                    if not lot_mapping:
+                        return self.json_response({
+                            "status": "error",
+                            "message": "Lot not found: %s" % lot_external_id,
+                        }, 404)
+                    lot = env["stock.lot"].browse(lot_mapping.res_id)
+                    if not lot.exists() or (
+                        lot.company_id and lot.company_id != receipt.company_id
+                    ):
+                        return self.json_response({
+                            "status": "error",
+                            "message": "Lot not found: %s" % lot_external_id,
+                        }, 404)
+                    if lot.product_id != product:
+                        return self.json_response({
+                            "status": "error",
+                            "message": (
+                                "Lot %s does not belong to product %s" % (
+                                    lot_external_id, product.display_name,
+                                )
+                            ),
+                        }, 422)
+
+                    if product.tracking == "serial" and not move.product_uom.is_zero(quantity - 1):
+                        return self.json_response({
+                            "status": "error",
+                            "message": (
+                                "Serial %s represents exactly one unit; "
+                                "got a quantity of %s" % (lot_external_id, quantity)
+                            ),
+                        }, 422)
+
+                    resolved_lots[product.id] = lot
+                elif lot_external_id:
+                    return self.json_response({
+                        "status": "error",
+                        "message": (
+                            "Product %s is not lot/serial-tracked; "
+                            "lot_external_id is not applicable" % product.display_name
+                        ),
+                    }, 422)
 
                 # Initial implementation supports exact receipt quantities.
                 # Partial receipts will be handled in a later phase.
@@ -248,6 +338,16 @@ class AgriwareReceiptValidationAPI(http.Controller):
 
             for move in moves:
                 move.quantity = quantities[move.product_id.id]
+                lot = resolved_lots.get(move.product_id.id)
+                if lot:
+                    # move.quantity's own inverse (_set_quantity ->
+                    # _set_quantity_done) already created exactly one
+                    # move line for this move (Phase 8's one-move-per-
+                    # product invariant, and Step 5's exactly-one-unit
+                    # rule for serials) -- this only assigns which lot
+                    # it belongs to, using Odoo's own move_line_ids.lot_id
+                    # field and its native _check_lot_product constraint.
+                    move.move_line_ids.lot_id = lot.id
 
             result = receipt.button_validate()
 

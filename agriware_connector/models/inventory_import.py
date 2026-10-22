@@ -200,6 +200,14 @@ class AgriwareInventoryImportLine(models.Model):
         "stock.location", required=True, ondelete="restrict",
     )
 
+    lot_id = fields.Many2one(
+        "stock.lot", ondelete="restrict",
+        help="Set only for a lot/serial-tracked product (Phase F). "
+             "Reconciliation for such a line is scoped to the exact "
+             "(product_id, location_id, lot_id) combination -- never "
+             "aggregated with any other lot of the same product.",
+    )
+
     uom_id = fields.Many2one(
         "uom.uom", required=True,
         help="The product's own unit of measure. reported_quantity and "
@@ -250,12 +258,20 @@ class AgriwareInventoryImportLine(models.Model):
 
     def _read_onhand_quantity(self):
         """Read-only. Sums stock.quant.quantity for this line's exact
-        (product_id, location_id) -- never writes inventory_quantity,
-        never calls action_apply_inventory().
+        (product_id, location_id[, lot_id]) -- never writes
+        inventory_quantity, never calls action_apply_inventory().
+
+        When lot_id is set (Phase F), the domain is scoped to that
+        exact lot as well, so a lot-tracked line is never reconciled
+        against -- or confused with -- a different lot of the same
+        product sitting in the same location.
         """
         self.ensure_one()
-        quants = self.env["stock.quant"].sudo().search([
+        domain = [
             ("product_id", "=", self.product_id.id),
             ("location_id", "=", self.location_id.id),
-        ])
+        ]
+        if self.lot_id:
+            domain.append(("lot_id", "=", self.lot_id.id))
+        quants = self.env["stock.quant"].sudo().search(domain)
         return sum(quants.mapped("quantity"))

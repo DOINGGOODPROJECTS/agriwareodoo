@@ -53,9 +53,12 @@ Verified by reading `agriware_connector/controllers/`, `agriware_connector/model
   [EXTERNAL_ID_MAPPING.md](EXTERNAL_ID_MAPPING.md)); and, as of Phase D,
   `agriware.uom.mapping` (database-backed unit mapping — see [UOM_MAPPING.md](UOM_MAPPING.md)); and,
   as of Phase E, `agriware.inventory.import`/`.line` (staged WMS stock observations — see
-  [INITIAL_INVENTORY_IMPORT.md](INITIAL_INVENTORY_IMPORT.md)).
-  Product (Phase B), warehouse (Phase C), supplier (Phase D), and initial inventory import
-  (Phase E) are all implemented — see each phase's own reference document.
+  [INITIAL_INVENTORY_IMPORT.md](INITIAL_INVENTORY_IMPORT.md)). Phase F adds no new model of its
+  own — it reuses Odoo's native `stock.lot` directly, mapped through the same Phase A service (see
+  [LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md)).
+  Product (Phase B), warehouse (Phase C), supplier (Phase D), initial inventory import (Phase E),
+  and lot/serial synchronization (Phase F) are all implemented — see each phase's own reference
+  document.
 - **Security fix (post-Phase B):** a real authorization-isolation vulnerability was found and
   fixed — an API key generated with no external-system binding could inherit authorization from an
   unrelated bound key sharing its company, reproduced via a real HTTP request before being fixed.
@@ -188,7 +191,7 @@ used in production by at least one real integration — it is **not** part of th
 | Create/update suppliers via API | **Implemented** (Phase D — see [SUPPLIER_SYNCHRONIZATION.md](SUPPLIER_SYNCHRONIZATION.md)); existing-partner adoption designed but not implemented |
 | Unit-of-measure mapping | **Implemented** (Phase D — see [UOM_MAPPING.md](UOM_MAPPING.md)) — database-backed, admin-managed, layered on top of Phase B's hardcoded fallback |
 | Initial inventory import / reconciliation | **Implemented** (Phase E — see [INITIAL_INVENTORY_IMPORT.md](INITIAL_INVENTORY_IMPORT.md)) — staged and human-reviewed only; native apply-to-stock handoff is manual, by design, not automated |
-| Lot/serial support | **Proposed — not implemented** (currently explicitly rejected, by design, and that rejection stays in place until this ships — see [WMS_FIRST_INTEGRATION_PLAN.md](WMS_FIRST_INTEGRATION_PLAN.md#lot-and-batch-support)) |
+| Lot/serial support | **Implemented** (Phase F — see [LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md)); the blanket rejection of a tracked product with no lot_external_id remains in place unchanged — only a product whose line now names its lot/serial is accepted |
 | Receipts/dispatches addressable by external ID (not just Odoo ID) | **Proposed — not implemented** |
 
 ### Security model (current, extended by proposal)

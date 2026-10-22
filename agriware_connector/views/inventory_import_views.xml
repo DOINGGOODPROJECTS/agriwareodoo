@@ -58,9 +58,10 @@
                     <notebook>
                         <page string="Lines">
                             <field name="line_ids">
-                                <list string="Lines" editable="false"
+                                <list string="Lines"
                                       decoration-warning="validation_status == 'stale'">
                                     <field name="product_id"/>
+                                    <field name="lot_id" optional="show"/>
                                     <field name="external_unit_code"/>
                                     <field name="original_reported_quantity"/>
                                     <field name="uom_id"/>
