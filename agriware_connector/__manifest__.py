@@ -13,7 +13,7 @@ The connector enables communication and data synchronization
 between AgriWare and Odoo.
     """,
     "category": "Inventory/Inventory",
-    "author": "AgriWare",
+    "author": "Cool Agristock",
     "website": "https://github.com/DOINGGOODPROJECTS/agriwareodoo",
     "license": "LGPL-3",
     "images": [
