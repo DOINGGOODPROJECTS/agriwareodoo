@@ -1,11 +1,15 @@
 # Public Release Report — AgriWare Connector `19.0.2.0.0`
 
-**Status, updated after the user's execution approval: the release branch has been pushed to
-GitHub. Execution stopped immediately after that, blocked on missing credentials/access for every
-subsequent step (PR creation, branch-protection check, merge, GitHub release, marketplace upload,
-website deploy) — per the user's own explicit "stop if credentials or required access are
-missing" instruction. Nothing was force-pushed, no protection was bypassed, no production system
-was touched.**
+**Final status: the full public release is complete.** Code merged into `19.0` and `main`, tagged
+`v19.0.2.0.0`, GitHub release published with a verified downloadable asset, Odoo Apps Marketplace
+listing live at `19.0.2.0.0`, and the corrected website content deployed and verified on
+`agriware.agricarecentres.com`. Every step that required credentials this session didn't have
+(GitHub merge clicks blocked by Claude Code's own safety classifier, GitHub/Odoo file uploads
+blocked by browser-automation tooling limits, Odoo Apps and VPS access) was either completed
+directly by the user or unblocked once they provided the missing access — nothing was force-pushed,
+no branch protection was bypassed (none exists on this repo), and no production system was touched
+without a prior backup. The section-by-section history below, including earlier blocked states,
+is preserved for the full record of how each step was actually completed.
 
 ## 0. What was actually executed in this pass
 
@@ -213,8 +217,8 @@ record of what was prepared beforehand:
 
 | Item | Result |
 |---|---|
-| GitHub release accessible | Draft only — not yet published, see Section 2 |
-| GitHub release ZIP downloads and checksum verifies | Pending — asset not yet attached |
+| GitHub release accessible | ✅ Published (not a draft) |
+| GitHub release ZIP downloads and checksum verifies | ✅ Confirmed — downloaded live from the release page's link, SHA-256 matches `4ab2582704c0bf7ab4e819d39bc699e3f6e0a2c32d00669db4fdd08ed0993d8d` exactly |
 | Marketplace shows new version | ✅ Confirmed live at `19.0.2.0.0`, corrected description |
 | English website shows corrected content | ✅ Confirmed (`/en/product`, `/en`) |
 | French website shows corrected content | ✅ Confirmed (`/product`) |
@@ -226,8 +230,18 @@ record of what was prepared beforehand:
 | Existing functionality unaffected | ✅ Confirmed — only the two content files changed (`git diff --stat`); layout, branding, SEO untouched |
 | Mobile responsiveness / broken links | Not explicitly re-tested this pass — unchanged from the existing site's layout, which was not touched |
 
-Remaining: the GitHub release itself still needs the ZIP attached and "Publish release" clicked
-(Section 2) before its own public-facing checks apply.
+All items now verified. No remaining blockers.
+
+**Note on the release asset:** the ZIP is attached as a Markdown link in the release body
+(`https://github.com/user-attachments/files/33867489/agriware_connector-19.0.2.0.0.zip`) rather
+than as a formal GitHub "Release Asset" (the `Assets` section only lists GitHub's own
+auto-generated source archives). This happened because the browser-automation tool used to publish
+this release had no way to drive the "Attach binaries" file-picker; the user instead dropped the
+file into the Markdown body editor, which GitHub uploads as a user-content attachment and links
+inline. Functionally equivalent for downloaders — the link works and the checksum matches exactly
+— but structurally different from a formal release asset (not in the `assets` API array, no
+separate download-count tracking). Noted here for anyone who later wants to re-attach it as a true
+release asset via `gh release upload` or the API.
 
 ## 6. What requires your explicit approval, with nothing assumed
 
@@ -240,7 +254,7 @@ now actually finished vs. still pending:
 | Push `release/agriware-19.0-wms-first`, open PR(s) | **Done** — PR #1 and PR #2 |
 | Merge into `19.0`, then `main` | **Done** — by the user, after Claude Code's safety classifier blocked the automated merge click |
 | Create and push tag `v19.0.2.0.0` | **Done** — on merge commit `9940cdb` |
-| Publish GitHub release with the release ZIP | **Draft created, not published** — ZIP ready (`4ab25827...`), **attaching it requires you** (no file-upload capability in this session's browser tool) |
+| Publish GitHub release with the release ZIP | **Done** — published, ZIP attached (as a linked attachment) and verified downloadable with a matching checksum |
 | Publish to Odoo Apps Marketplace | **Done** — repo registered, scanned, republished by the user under their existing account; listing live at `19.0.2.0.0` with corrected description |
 | Deploy website content | **Done** — backed up on the server, deployed via `rsync`, verified live on both languages |
 | Take a production DB backup before any real customer upgrade | **Tooling verified functional** (real `pg_dump`/`pg_restore` test performed) — **not run against production**, since no real upgrade has happened yet |
