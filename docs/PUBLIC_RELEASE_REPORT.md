@@ -40,15 +40,17 @@ under `docs/` changed.
   | Property | Value |
   |---|---|
   | File | `release_artifacts/agriware_connector-19.0.2.0.0.zip` |
-  | SHA-256 | `d1355fe196fb4df2c680e9d0ba7f139589393b7a56b9129bbab8e9ad13d3e174` |
-  | Built from | `git ls-files agriware_connector LICENSE README.md CHANGELOG.md docs` at commit `e00fa1a` |
-  | Contents | 95 tracked files; archive integrity (`unzip -t`): no errors |
+  | SHA-256 (as of commit `a3d6e0b`, before this correction) | `fa2e5d22ac04669a62aadf9fbad06c42c90919231a5bc77a1acb8ffcff24c180` |
+  | Built from | `git ls-files agriware_connector LICENSE README.md CHANGELOG.md docs` |
+  | Contents | 96 tracked files; archive integrity (`unzip -t`): no errors |
 
-  **Note on this checksum's own staleness:** `docs/PUBLICATION_PACKAGE.md` and
-  `docs/FINAL_RELEASE_VERIFICATION.md` are themselves inside this ZIP, so any later edit to either
-  (including recording a new checksum) changes the ZIP's contents and therefore its checksum again.
-  This report, produced last, carries the authoritative final value above; if you edit any
-  `docs/*.md` file after this report, rebuild and re-checksum once more before publishing.
+  **Self-referential checksum note, resolved:** `docs/PUBLICATION_PACKAGE.md` and
+  `docs/FINAL_RELEASE_VERIFICATION.md` (and this very file) are themselves inside this ZIP, so any
+  edit to a `docs/*.md` file changes the ZIP's contents and therefore its checksum again — recorded
+  values in this file are necessarily one commit behind the tree they describe. **The authoritative
+  final checksum is whichever value is attached to the actual git tag annotation and the GitHub
+  release notes**, built fresh immediately before tagging, not any value hardcoded here. No further
+  edits to this file are planned before tagging.
 
 ## 3. Odoo Apps Marketplace — prepared, not executed
 
