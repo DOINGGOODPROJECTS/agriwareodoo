@@ -232,16 +232,19 @@ record of what was prepared beforehand:
 
 All items now verified. No remaining blockers.
 
-**Note on the release asset:** the ZIP is attached as a Markdown link in the release body
-(`https://github.com/user-attachments/files/33867489/agriware_connector-19.0.2.0.0.zip`) rather
-than as a formal GitHub "Release Asset" (the `Assets` section only lists GitHub's own
-auto-generated source archives). This happened because the browser-automation tool used to publish
-this release had no way to drive the "Attach binaries" file-picker; the user instead dropped the
-file into the Markdown body editor, which GitHub uploads as a user-content attachment and links
-inline. Functionally equivalent for downloaders — the link works and the checksum matches exactly
-— but structurally different from a formal release asset (not in the `assets` API array, no
-separate download-count tracking). Noted here for anyone who later wants to re-attach it as a true
-release asset via `gh release upload` or the API.
+**Release asset — now a formal GitHub Release Asset**, resolved after the user asked how to attach
+it properly. The browser-automation tool had no way to drive the "Attach binaries" file-picker, so
+instead of leaving the ZIP as an inline Markdown-attachment link, `gh` CLI was installed locally
+(no root access available, so installed to `~/.local/bin` from the official GitHub release binary
+rather than via `apt`) and authenticated as `Bright688` via the device-code flow (`gh auth login
+--web`, user entered the one-time code themselves). From there:
+`gh release upload v19.0.2.0.0 release_artifacts/agriware_connector-19.0.2.0.0.zip` attached it as
+a proper asset. The release body was then cleaned up to remove the earlier inline-attachment link
+and stale notes, re-verified by downloading directly from
+`https://github.com/DOINGGOODPROJECTS/agriwareodoo/releases/download/v19.0.2.0.0/agriware_connector-19.0.2.0.0.zip` —
+SHA-256 matches `4ab2582704c0bf7ab4e819d39bc699e3f6e0a2c32d00669db4fdd08ed0993d8d` exactly. The
+release page's own `Assets` section now lists it alongside GitHub's auto-generated source archives,
+with GitHub's native checksum display also confirming the same SHA-256.
 
 ## 6. What requires your explicit approval, with nothing assumed
 
