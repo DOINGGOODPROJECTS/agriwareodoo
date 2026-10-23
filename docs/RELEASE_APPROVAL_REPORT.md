@@ -70,13 +70,12 @@ assumed:**
   changing any external behavior — a good candidate for its own small, behavior-preserving phase
   rather than bundling it into a documentation/release-prep pass.
 
-**Module version left unchanged (`19.0.1.7.0`), deliberately, not an oversight:** the
-production-readiness assessment recommended `19.0.2.0.0` for the next public release. This
-preparation pass did **not** apply that bump to the manifest — deciding and setting the actual
-version that ships is a release-execution action, not a preparation one, and belongs to whoever
-has the authority to actually publish this release. Bumping it here, unasked, would have been
-exactly the kind of "declare it ready to ship" overreach this task's own "await explicit approval"
-instruction guards against.
+**Module version:** left at `19.0.1.7.0` during this (Step 129) pass, deliberately, as explained
+below — then explicitly finalized to `19.0.2.0.0` in the subsequent Step 130 release-candidate
+verification pass, once that step's own instructions explicitly authorized setting it. This
+document's original reasoning is kept for the record: deciding and setting the actual version that
+ships is a release-*execution* action, not a preparation one, and should only be done once a task
+explicitly calls for it — which Step 130 did.
 
 **Website copy not applied:** `docs/WEBSITE_CONTENT_CORRECTIONS.md` contains the proposed English
 and French replacement text. The live website and its local Next.js source were not touched, per

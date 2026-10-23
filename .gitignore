@@ -46,3 +46,4 @@ logs/
 /component_event/
 /connector/
 /queue_job/
+release_artifacts/

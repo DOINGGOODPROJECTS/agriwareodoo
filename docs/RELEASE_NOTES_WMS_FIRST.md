@@ -1,10 +1,9 @@
 # Release Notes — WMS-First AgriWare Connector
 
 **For:** customers and prospects evaluating whether to upgrade from the currently-published
-`19.0.1.0.0` marketplace release. **Recommended version for this release:** `19.0.2.0.0` (see
-[PRODUCTION_READINESS_REPORT.md's Section O](PRODUCTION_READINESS_REPORT.md#o-recommended-version-number)
-for why) — the manifest itself has not been changed to this number yet; that is a decision for
-whoever actually executes the release, not something this preparation phase applies unilaterally.
+`19.0.1.0.0` marketplace release. **This release is `19.0.2.0.0`** — finalized in this
+release-candidate pass (Step 130), per the recommendation in
+[PRODUCTION_READINESS_REPORT.md's Section O](PRODUCTION_READINESS_REPORT.md#o-recommended-version-number).
 
 ## What's new
 

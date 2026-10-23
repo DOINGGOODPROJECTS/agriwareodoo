@@ -58,10 +58,9 @@ were verified in this pass, not assumed.
   (excluded by `.gitignore`) and would not be included in any archive built from this repository.
   Flagged for manual working-tree cleanup; not deleted by this pass since it wasn't created by this
   session's own work.
-- [ ] **Module version** — left at `19.0.1.7.0` (the current development version) rather than bumped
-  to the recommended `19.0.2.0.0`. Deliberately not changed in this preparation pass — see
-  `docs/RELEASE_APPROVAL_REPORT.md` for why that's a release-execution decision, not a
-  preparation one.
+- [x] **Module version** — bumped to `19.0.2.0.0` in the Step 130 release-candidate pass, per that
+  step's explicit instruction (left at `19.0.1.7.0` during Step 129 on purpose — see
+  `docs/RELEASE_APPROVAL_REPORT.md`).
 
 ## Final testing
 

@@ -4,7 +4,17 @@ All notable changes to AgriWare Connector are documented here. Versions follow O
 `{odoo_series}.{major}.{minor}.{patch}` convention.
 
 This file covers the **WMS-first rearchitecture**: `19.0.1.0.0` (the last published marketplace
-release) through `19.0.1.7.0` (the current development version, Phases A–H of that effort).
+release) through `19.0.2.0.0` (this release candidate). The entries below `19.0.2.0.0` are the
+per-phase development history and are kept exactly as originally written, unrewritten, even though
+none of those intermediate version numbers (`19.0.1.1.0` through `19.0.1.7.0`) was itself published.
+
+## [19.0.2.0.0] — WMS-first general availability (release candidate)
+
+The umbrella release bundling everything below: Phases A through H of the WMS-first
+rearchitecture, finalized after the Step 129/130 release-preparation and verification passes. See
+`docs/RELEASE_NOTES_WMS_FIRST.md` for the customer-facing summary and
+`docs/FINAL_RELEASE_VERIFICATION.md` for the complete verification record this version number is
+based on.
 
 ## [19.0.1.7.0] — Phase G: WMS-first receipt and dispatch synchronization
 
