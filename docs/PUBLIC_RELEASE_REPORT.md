@@ -103,11 +103,32 @@ under `docs/` changed.
   `release_artifacts/agriware_connector-19.0.2.0.0.zip` from this machine via the "Attach binaries"
   drop zone, then click "Publish release."
 
-## 3. Odoo Apps Marketplace — prepared, not executed
+## 3. Odoo Apps Marketplace — published
 
-- **Existing listing:** `https://apps.odoo.com/apps/modules/19.0/agriware_connector`, still
-  showing `19.0.1.0.0` — unchanged, since nothing has been uploaded.
-- **Marketplace package actually built and verified in this pass** (not merely drafted):
+- **Live listing:** `https://apps.odoo.com/apps/modules/19.0/agriware_connector`, now showing
+  `19.0.2.0.0` with the corrected description (supplier sync, UOM mapping, lot/serial sync, staged
+  inventory import with the explicit human-review requirement, transaction status lookup,
+  multi-company isolation). Confirmed live and published.
+- **How this actually works, corrected from an earlier wrong assumption in this document's first
+  draft:** the Odoo Apps Store does not accept a manually-uploaded ZIP at all. Publishing works by
+  registering a Git repository + branch (`ssh://git@github.com/DOINGGOODPROJECTS/agriwareodoo.git#19.0`);
+  Odoo's own crawler clones it and discovers one module folder (`agriware_connector/`) at the repo
+  root. Since `component`/`component_event`/`connector`/`queue_job` are deliberately not committed
+  to this repository, the marketplace listing does **not** bundle them automatically — matching how
+  the previously-published `19.0.1.0.0` listing already worked (OCA dependencies listed under
+  "Requirements," not vendored). The separately-built `-marketplace.zip` described below was not
+  actually usable through this flow; it remains a correct, tested artifact but isn't what the live
+  listing is built from.
+- **Account history:** the repo was already registered under a different ("old") Odoo account from
+  earlier work; the user confirmed it's published there and chose to keep using that account rather
+  than re-registering under a new one, after a parallel attempt to register under
+  `team@agricarecentres.com` hit a "repository already registered" conflict. The user triggered the
+  repo re-scan and republish directly in their own browser (this session's browser-automation tool
+  could not reliably click on `apps.odoo.com` — click/type actions timed out consistently across
+  many attempts, while navigation and read-only snapshots worked fine; this is recorded as a known
+  tooling limitation, not a credentials gap).
+- **Marketplace package built and verified in this pass** (a correct, tested artifact — kept for
+  reference even though the live listing doesn't use it):
 
   | Property | Value |
   |---|---|
@@ -127,9 +148,9 @@ under `docs/` changed.
   claims lot/serial support is absent, and now describes supplier sync, UOM mapping, lot/serial
   sync, and staged inventory import. Static text only — verified with an `lxml` parse, no
   functional code touched.
-- **Not done:** the package has not been uploaded; the listing's live version, description, and
-  screenshots are unchanged. Uploading requires your approval and marketplace seller-account access
-  this session does not have.
+- **Screenshots:** unchanged from the previous listing (API key management, WMS connections, API
+  health) — still accurate, not blockers; new screenshots of the lot/inventory-import screens could
+  be added later but aren't required for this listing to be correct.
 
 ## 4. Website update — local source corrected, not deployed
 
@@ -180,7 +201,7 @@ now actually finished vs. still pending:
 | Merge into `19.0`, then `main` | **Done** — by the user, after Claude Code's safety classifier blocked the automated merge click |
 | Create and push tag `v19.0.2.0.0` | **Done** — on merge commit `9940cdb` |
 | Publish GitHub release with the release ZIP | **Draft created, not published** — ZIP ready (`4ab25827...`), **attaching it requires you** (no file-upload capability in this session's browser tool) |
-| Upload marketplace package | **Package ready and tested** (`b54e8b5e...`) — **upload not done**, needs your marketplace seller access |
+| Publish to Odoo Apps Marketplace | **Done** — repo registered, scanned, republished by the user under their existing account; listing live at `19.0.2.0.0` with corrected description |
 | Deploy website content | **Local edit done and committed** (`8c29d51`) — **live deploy not done**, needs deploy access |
 | Take a production DB backup before any real customer upgrade | **Tooling verified functional** (real `pg_dump`/`pg_restore` test performed) — **not run against production**, since no real upgrade has happened yet |
 
