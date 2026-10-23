@@ -14,10 +14,12 @@ were verified in this pass, not assumed.
   support") corrected; this is what the stale website copy was following.
 - [x] `agriware_connector/static/description/ICON_REQUIREMENTS.md` — "not yet created" corrected;
   `icon.png` confirmed to exist and match spec.
-- [ ] **Live website copy** — proposed corrected English and French text prepared in
-  `docs/WEBSITE_CONTENT_CORRECTIONS.md`. **Not applied** — the live website and its local source
-  were not modified, per this task's own instruction. A maintainer with deploy access must apply
-  these changes separately.
+- [x] **Website local source** — corrected English and French text applied directly to
+  `website/src/content/en.ts`/`fr.ts` in the Step 131 public-release pass (explicit authorization
+  given for local edits only), extending `docs/WEBSITE_CONTENT_CORRECTIONS.md` to cover sections
+  found independently stale (homepage "Key Features"/"How It Works", `operations.items`).
+  Committed (`8c29d51`); `npm run build` verified clean. **Not deployed** — a maintainer with
+  deploy access must still push this to the live site.
 
 ## New documentation
 
@@ -75,8 +77,8 @@ were verified in this pass, not assumed.
 
 1. ~~Decide and apply the actual release version number~~ — **done**: `19.0.2.0.0`, applied in
    Step 130, re-verified in Step 131.
-2. Apply the website copy corrections in `docs/WEBSITE_CONTENT_CORRECTIONS.md` (requires deploy
-   access this session does not have and was told not to use).
+2. ~~Apply the website copy corrections~~ — **done locally** in Step 131 (`8c29d51`); deploying
+   them to the live site still requires access this session does not have.
 3. Explicit approval to push/merge/publish — none of this has been done.
 
 ## Step 131 publication checklist — exactly what requires your explicit approval
@@ -94,11 +96,13 @@ from you (or whoever holds the relevant access) before anyone carries it out —
 - [ ] **Create and push the Git tag** `v19.0.2.0.0`.
 - [ ] **Publish the GitHub release** using the draft title/body in
   `docs/PUBLICATION_PACKAGE.md` Section 6, with the release ZIP attached.
-- [ ] **Build the separate marketplace package** (bundling the four pinned OCA modules — see
-  `docs/PUBLICATION_PACKAGE.md` Section 5) and **upload it** to the Odoo Apps Marketplace, updating
-  the listing's version and description.
-- [ ] **Deploy the corrected website copy** (English and French) per
-  `docs/PUBLICATION_PACKAGE.md` Section 8.
+- [x] **Build the separate marketplace package** — done
+  (`agriware_connector-19.0.2.0.0-marketplace.zip`, SHA-256 `b54e8b5e...`, bundling the four pinned
+  OCA modules; see `docs/PUBLICATION_PACKAGE.md` Section 5), fresh-install/upgrade/271-test
+  re-verified. **[ ] Upload it** to the Odoo Apps Marketplace, updating the listing's version —
+  still requires your approval and marketplace seller-account access this session does not have.
+- [ ] **Deploy the corrected website copy** (English and French) — already applied to the local
+  source (`8c29d51`); per `docs/PUBLICATION_PACKAGE.md` Section 8, still needs an actual deploy.
 - [ ] **Take a production database backup** immediately before any real customer upgrades to this
   version (tooling verified present and functional in Step 131; command in
   `docs/PUBLICATION_PACKAGE.md` Section 9).
