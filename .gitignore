@@ -47,3 +47,4 @@ logs/
 /connector/
 /queue_job/
 release_artifacts/
+website_backups/
