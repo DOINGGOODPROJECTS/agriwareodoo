@@ -1,6 +1,36 @@
 # Public Release Report — AgriWare Connector `19.0.2.0.0`
 
-**Status: preparation complete. No public or production action has been taken.** This report
+**Status, updated after the user's execution approval: the release branch has been pushed to
+GitHub. Execution stopped immediately after that, blocked on missing credentials/access for every
+subsequent step (PR creation, branch-protection check, merge, GitHub release, marketplace upload,
+website deploy) — per the user's own explicit "stop if credentials or required access are
+missing" instruction. Nothing was force-pushed, no protection was bypassed, no production system
+was touched.**
+
+## 0. What was actually executed in this pass
+
+| Step | Result |
+|---|---|
+| 1. Verify commit, packages, checksums | Done. See Section 2 below — one checksum discrepancy was found, flagged to the user, and resolved per their explicit choice before proceeding. |
+| 2. Push release branch to GitHub | **Done.** `release/agriware-19.0-wms-first` pushed to `origin`, now tracking `origin/release/agriware-19.0-wms-first`. GitHub printed its own PR-creation URL: `https://github.com/DOINGGOODPROJECTS/agriwareodoo/pull/new/release/agriware-19.0-wms-first` |
+| 3. Create PR targeting `19.0` | **Blocked.** No `gh` CLI installed, no GitHub API token/credential anywhere in this environment (checked: env vars, `~/.netrc`, `~/.git-credentials`, `gh` config directory — none exist), and no connected authenticated browser session (the browser-automation tool reported no extension connection). PR creation requires GitHub's REST API or web UI; SSH-key git access does not cover it. |
+| 4–9 | **Not attempted** — each depends on the PR existing (4: CI/merge checks run on the PR; 5: merge the PR; 6: sync `main`; 7: tag the actual merge commit, not a pre-merge one; 8: publish the GitHub release) or on access this session doesn't have (9: Odoo Apps Marketplace seller portal). |
+| 10. Deploy website | **Not attempted** — confirmed in Step 131a/131b that this repository has no deployment mechanism at all (no `vercel.json`/`netlify.toml`/deploy workflow, no deploy credentials in `.env.example`); deploying requires access and action from whoever actually operates `agriware.agricarecentres.com`. |
+| 11–12 | **Not applicable** — nothing is public yet to verify. |
+| 13. Update this report | Done now, with actual results in place of projected ones. |
+
+**What you need to provide for this to continue, in order:** either (a) create the pull request
+yourself at the URL above, targeting `19.0`, and tell me once it exists so I can verify CI/merge
+status, or (b) give me a way to call the GitHub API — a personal access token (repo scope) as an
+environment variable, or install and authenticate the `gh` CLI, or connect the browser-automation
+extension to an authenticated GitHub tab. Separately, for steps 9–10: Odoo Apps Marketplace seller
+credentials/access, and website deployment access, are both needed from whoever holds them — this
+session has neither and was not given a path to obtain them.
+
+---
+
+**Original preparation status (below, from before execution began): preparation complete. No
+public or production action had yet been taken.** This report
 distinguishes what was actually done (local, reversible) from what remains gated behind your
 explicit approval, per this task's own standing instruction: *"Before any public publication,
 production deployment, or protected-branch merge, obtain my explicit approval. Do not interpret
@@ -24,33 +54,39 @@ None of these change `agriware_connector`'s functional code — confirmed by dif
 `static/description/index.html` (marketing text), `website/src/content/{en,fr}.ts`, and files
 under `docs/` changed.
 
-## 2. GitHub release — prepared, not executed
+## 2. GitHub release — branch pushed, blocked after that
 
-- Remote (`origin` → `github.com/DOINGGOODPROJECTS/agriwareodoo`) confirmed reachable via a
-  read-only `git ls-remote`. No push was made.
-- **Branch protection on `main`/`19.0` could not be verified from this session** — no `gh` CLI, no
-  authenticated GitHub API access. **You or a repo admin must confirm this directly** before
-  choosing a direct-merge vs. pull-request procedure (both are drafted in
-  `docs/PUBLICATION_PACKAGE.md` Section 3).
-- **Not done:** branch not pushed, no PR opened, nothing merged into `19.0` or `main`, no tag
-  created, no GitHub release published.
-- **Release ZIP, rebuilt and re-checksummed** after the `index.html` correction (the earlier
-  `e9aa1d3c...` checksum from Step 130/131a no longer matches the current tree):
+- Remote (`origin` → `github.com/DOINGGOODPROJECTS/agriwareodoo`) reachable; SSH authentication
+  confirmed working as `Bright688`.
+- **`release/agriware-19.0-wms-first` pushed to `origin`** (new branch, now tracked). Before
+  pushing: confirmed `origin/19.0` and `origin/main` are both at `444b587`, and the release branch
+  is 19 commits ahead with 0 commits behind — a clean fast-forward relationship, no merge conflicts
+  possible.
+- **Branch protection on `main`/`19.0` could not be verified** — no `gh` CLI, no GitHub API token
+  anywhere in this environment, no connected browser session. **You or a repo admin must confirm
+  this directly**, or give this session a way to query it (see Section 0 above).
+- **PR creation, merge, tag, and GitHub release publication are all blocked on the same missing
+  access** (GitHub REST API / `gh` CLI / authenticated browser) — see Section 0. GitHub's own push
+  output gave the PR-creation URL directly:
+  `https://github.com/DOINGGOODPROJECTS/agriwareodoo/pull/new/release/agriware-19.0-wms-first`
+- **Checksum discrepancy found and resolved before pushing, with the user's explicit choice**: the
+  checksum originally approved (`d1355fe1...`) had gone stale because the report documenting it was
+  itself added to the bundled `docs/` folder after that checksum was computed. Rebuilt twice more to
+  reach a stable final state (no further doc edits planned before tagging):
 
   | Property | Value |
   |---|---|
   | File | `release_artifacts/agriware_connector-19.0.2.0.0.zip` |
-  | SHA-256 (as of commit `a3d6e0b`, before this correction) | `fa2e5d22ac04669a62aadf9fbad06c42c90919231a5bc77a1acb8ffcff24c180` |
+  | **Final SHA-256 (at pushed commit `dc2eed8`)** | **`bc3ba83ab9dc7cdc1386c5c23d42ae57560b3389534d41a85055393ff21a8936`** |
   | Built from | `git ls-files agriware_connector LICENSE README.md CHANGELOG.md docs` |
   | Contents | 96 tracked files; archive integrity (`unzip -t`): no errors |
+  | Module code | Unchanged since the last full 271/0/0 test run — only `docs/` changed after that run, so no retest was needed |
 
-  **Self-referential checksum note, resolved:** `docs/PUBLICATION_PACKAGE.md` and
-  `docs/FINAL_RELEASE_VERIFICATION.md` (and this very file) are themselves inside this ZIP, so any
-  edit to a `docs/*.md` file changes the ZIP's contents and therefore its checksum again — recorded
-  values in this file are necessarily one commit behind the tree they describe. **The authoritative
-  final checksum is whichever value is attached to the actual git tag annotation and the GitHub
-  release notes**, built fresh immediately before tagging, not any value hardcoded here. No further
-  edits to this file are planned before tagging.
+  **This is the checksum that should accompany the eventual GitHub release and tag** — it will
+  change again if any further `docs/*.md` edit is made before tagging, since those files ship
+  inside this same ZIP.
+- Marketplace ZIP is unaffected by any of this (`docs/` isn't bundled in it): SHA-256
+  `b54e8b5ee7d5fbe3947d263d97c4db5e50b32d1f47cdf1c20bb2a349bdb61259`, unchanged.
 
 ## 3. Odoo Apps Marketplace — prepared, not executed
 
