@@ -223,7 +223,11 @@ curl -s -X POST https://YOUR_ODOO_URL/agriware/api/v1/receipts/102/validate \
 
 `received_quantities` must list exactly the same products as the draft receipt, with exactly
 matching quantities — partial receipts are not yet supported (see
-[Known limitations](#known-limitations)). Lot/serial-tracked products are rejected with `409`.
+[Known limitations](#known-limitations)). **Lot/serial-tracked products are supported as of
+Phase F** via an optional `lot_external_id` per line (resolved through the same external-ID
+mapping `POST /lots` uses) — see
+[LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md). A tracked product with no
+`lot_external_id` on its line is still rejected with `409`.
 
 ## Dispatch creation and validation
 
@@ -327,7 +331,10 @@ duplicate references, state mismatches, and quantity mismatches, each with a dif
 - No per-warehouse access restriction within a company — any authorized key can act on any
   warehouse the caller's company owns.
 - Partial receipts and partial dispatches are not supported; quantities must match exactly.
-- Lot/serial-tracked products are rejected on both receipt and dispatch validation (`409`).
+- **Lot/serial-tracked products are supported as of Phase F** — `POST`/`GET`/`PATCH /lots`, plus an
+  optional `lot_external_id` on receipt/dispatch validation lines and on inventory-import lines.
+  A tracked product with no `lot_external_id` is still rejected with `409`. See
+  [LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md).
 - Multiple move lines for the same product on one receipt are not supported.
 - No automatic or scheduled synchronization — every request is initiated by your WMS; there is no
   polling, cron job, or push notification from AgriWare Connector.

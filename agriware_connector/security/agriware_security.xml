@@ -59,4 +59,45 @@
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
 
+    <!-- Each company only ever sees and manages its own external systems. -->
+    <record id="rule_agriware_external_system_company" model="ir.rule">
+        <field name="name">AgriWare External System: multi-company</field>
+        <field name="model_id" ref="model_agriware_external_system"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Each company only ever sees its own external ID mappings. -->
+    <record id="rule_agriware_external_id_mapping_company" model="ir.rule">
+        <field name="name">AgriWare External ID Mapping: multi-company</field>
+        <field name="model_id" ref="model_agriware_external_id_mapping"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Each company only ever sees its own UOM mappings. -->
+    <record id="rule_agriware_uom_mapping_company" model="ir.rule">
+        <field name="name">AgriWare UOM Mapping: multi-company</field>
+        <field name="model_id" ref="model_agriware_uom_mapping"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Each company only ever sees its own inventory imports. -->
+    <record id="rule_agriware_inventory_import_company" model="ir.rule">
+        <field name="name">AgriWare Inventory Import: multi-company</field>
+        <field name="model_id" ref="model_agriware_inventory_import"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_agriware_inventory_import_line_company" model="ir.rule">
+        <field name="name">AgriWare Inventory Import Line: multi-company</field>
+        <field name="model_id" ref="model_agriware_inventory_import_line"/>
+        <field name="domain_force">[('import_id.company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Each company only ever sees its own WMS transaction identities. -->
+    <record id="rule_agriware_wms_transaction_company" model="ir.rule">
+        <field name="name">AgriWare WMS Transaction: multi-company</field>
+        <field name="model_id" ref="model_agriware_wms_transaction"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
 </odoo>

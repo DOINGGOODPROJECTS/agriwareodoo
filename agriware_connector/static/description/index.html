@@ -21,10 +21,19 @@
     <p>
         AgriWare Connector is a free, open-source Odoo 19 application that enables businesses to
         connect compatible external Warehouse Management Systems (WMS) to Odoo Inventory through a
-        secure REST API. It exposes that API so the WMS can read product, warehouse, and stock
-        data, and create and validate incoming receipts and outgoing dispatches, without a human
-        re-keying anything into Odoo. AgriWare remains a standalone application; this module is the
-        bridge between the two systems.
+        secure REST API. It exposes that API so the WMS can read and write product, warehouse, and
+        supplier data; configure unit-of-measure mappings; create and resolve lots and serial
+        numbers; stage initial inventory counts for human review; and create and validate incoming
+        receipts and outgoing dispatches &mdash; including lot/serial-tracked products &mdash;
+        without a human re-keying anything into Odoo. AgriWare remains a standalone application;
+        this module is the bridge between the two systems.
+    </p>
+    <p>
+        Initial stock counts from your WMS are staged in Odoo for review, not applied
+        automatically. An Inventory Manager compares the WMS's count against Odoo's own records
+        and decides what to do &mdash; applying an approved count to actual stock is a separate,
+        manual action in Odoo's native Inventory Adjustment screen. This keeps a human in the loop
+        for every change to your real inventory levels.
     </p>
     <p>
         Businesses generate and manage their own API keys directly inside the application &mdash;
@@ -38,11 +47,15 @@
 
     <h2 style="font-size: 20px;">Key features</h2>
     <ul>
-        <li>REST API for products, warehouses, and on-hand inventory</li>
-        <li>Create and validate stock receipts (incoming deliveries)</li>
-        <li>Create and validate stock dispatches (outgoing deliveries)</li>
+        <li>REST API for products, warehouses, suppliers, and on-hand inventory, addressed by your own external IDs</li>
+        <li>Unit-of-measure mapping for units Odoo doesn't ship with by default</li>
+        <li>Lot and serial number creation and resolution for traceable products</li>
+        <li>Staged initial inventory import, reviewed and applied manually by an Inventory Manager &mdash; never applied automatically</li>
+        <li>Create and validate stock receipts (incoming deliveries), including lot/serial-tracked products</li>
+        <li>Create and validate stock dispatches (outgoing deliveries), including lot/serial-tracked products</li>
+        <li>Look up the status of a receipt or dispatch by your own external reference</li>
         <li>Self-service API key management: generate, name, set an expiration or make permanent, view status, revoke, and replace keys, without needing Odoo System Administrator access</li>
-        <li>Dedicated role-based access group for external integrations</li>
+        <li>Dedicated role-based access group for external integrations, with multi-company isolation</li>
         <li>Concurrency-safe duplicate protection on receipt/dispatch creation</li>
     </ul>
 
@@ -60,7 +73,7 @@
     <ul>
         <li>The external WMS must support the documented REST API, or use an adapter, to integrate &mdash; not every warehouse system is automatically compatible</li>
         <li>No automatic or scheduled synchronization: every request is initiated by the external WMS</li>
-        <li>Lot/serial-tracked stock operations are not currently supported</li>
+        <li>Initial inventory imports are staged for human review &mdash; applying a reviewed count to actual Odoo stock still requires one manual step in Odoo's own Inventory Adjustment screen, by design</li>
         <li>Partial receipt and dispatch processing is not currently supported; quantities must match exactly</li>
         <li>Warehouse-specific access controls are not currently implemented; access is scoped by company only</li>
         <li>Pagination is not currently supported on list endpoints</li>
@@ -137,8 +150,8 @@
         This module does not send any data anywhere on its own. It only responds to requests from
         whichever external system an authorized business user explicitly connects by generating an
         API key, and only for the data categories documented above (products, warehouses,
-        inventory, receipts, and dispatches). No data is shared with AgriWare Connector's authors
-        or any third party.
+        suppliers, UOM mappings, lots and serial numbers, inventory, receipts, and dispatches). No
+        data is shared with AgriWare Connector's authors or any third party.
     </p>
 
     <h2 style="font-size: 20px;">Documentation</h2>

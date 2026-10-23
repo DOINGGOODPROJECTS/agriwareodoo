@@ -8,7 +8,7 @@ from odoo import http
 from odoo.http import request, Response
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.float_utils import float_compare
-from .api_security import require_agriware_api_user
+from .api_security import require_agriware_api_user, resolve_authorized_external_system
 
 _logger = logging.getLogger(__name__)
 
@@ -91,6 +91,7 @@ class AgriwareDispatchValidationAPI(http.Controller):
             }, 400)
 
         quantities = {}
+        lot_external_ids = {}
 
         for line in dispatched_quantities:
 
@@ -102,6 +103,7 @@ class AgriwareDispatchValidationAPI(http.Controller):
 
             product_id = line.get("product_id")
             quantity = line.get("quantity")
+            lot_external_id = line.get("lot_external_id")
 
             if (
                 type(product_id) is not int
@@ -116,7 +118,17 @@ class AgriwareDispatchValidationAPI(http.Controller):
                     "message": "Invalid or duplicate product quantity",
                 }, 400)
 
+            if lot_external_id is not None and (
+                not isinstance(lot_external_id, str) or not lot_external_id.strip()
+            ):
+                return self.json_response({
+                    "status": "error",
+                    "message": "Invalid lot_external_id",
+                }, 400)
+
             quantities[product_id] = quantity
+            if lot_external_id:
+                lot_external_ids[product_id] = lot_external_id.strip()
 
         env = request.env
 
@@ -198,8 +210,17 @@ class AgriwareDispatchValidationAPI(http.Controller):
                     "Only draft dispatches are supported", 409
                 )
 
-            # This API must not validate unrelated Odoo deliveries.
-            if not external_reference.startswith("AGRIWARE-DISP-"):
+            # This API must not validate unrelated Odoo deliveries. See
+            # receipt_validation.py's identical guard for the full
+            # reasoning (legacy fixed prefix, or a real Phase G
+            # agriware.wms.transaction row).
+            is_legacy_agriware_dispatch = external_reference.startswith("AGRIWARE-DISP-")
+            is_wms_first_dispatch = bool(env["agriware.wms.transaction"].sudo().search_count([
+                ("transaction_type", "=", "dispatch"),
+                ("external_reference", "=", external_reference),
+                ("picking_id", "=", dispatch.id),
+            ]))
+            if not is_legacy_agriware_dispatch and not is_wms_first_dispatch:
                 return error_response(
                     "Dispatch is not managed by AgriWare", 403
                 )
@@ -218,6 +239,26 @@ class AgriwareDispatchValidationAPI(http.Controller):
                     "Dispatched products do not match order", 409
                 )
 
+            # Phase F: resolving a lot requires knowing which external
+            # system this request is authorized for. Only resolved when
+            # at least one line actually used lot_external_id, so a
+            # legacy caller that never sends it is entirely unaffected
+            # even if its key happens to be unbound.
+            external_system = None
+            if lot_external_ids:
+                try:
+                    external_system = resolve_authorized_external_system()
+                except ValidationError as exc:
+                    return error_response(str(exc), 403)
+                if not external_system or external_system.company_id != dispatch.company_id:
+                    return error_response(
+                        "This API key is not authorized for lot-tracked "
+                        "dispatches on this company.", 403,
+                    )
+
+            Mapping = env["agriware.external.id.mapping"]
+            resolved_lots = {}
+
             for move in moves:
 
                 product = move.product_id
@@ -227,10 +268,49 @@ class AgriwareDispatchValidationAPI(http.Controller):
                         "Product mismatch", 409
                     )
 
+                lot_external_id = lot_external_ids.get(product.id)
+
                 if product.tracking != "none":
+                    if not lot_external_id:
+                        return error_response(
+                            "Lot or serial tracking is not supported yet",
+                            409,
+                        )
+
+                    lot_mapping = Mapping.resolve_mapping(
+                        dispatch.company_id, external_system, "stock.lot", lot_external_id,
+                    )
+                    if not lot_mapping:
+                        return error_response(
+                            "Lot not found: %s" % lot_external_id, 404,
+                        )
+                    lot = env["stock.lot"].browse(lot_mapping.res_id)
+                    if not lot.exists() or (
+                        lot.company_id and lot.company_id != dispatch.company_id
+                    ):
+                        return error_response(
+                            "Lot not found: %s" % lot_external_id, 404,
+                        )
+                    if lot.product_id != product:
+                        return error_response(
+                            "Lot %s does not belong to product %s" % (
+                                lot_external_id, product.display_name,
+                            ), 422,
+                        )
+
+                    if product.tracking == "serial" and not move.product_uom.is_zero(
+                        quantities[product.id] - 1
+                    ):
+                        return error_response(
+                            "Serial %s represents exactly one unit; got a "
+                            "quantity of %s" % (lot_external_id, quantities[product.id]), 422,
+                        )
+
+                    resolved_lots[product.id] = lot
+                elif lot_external_id:
                     return error_response(
-                        "Lot or serial tracking is not supported yet",
-                        409,
+                        "Product %s is not lot/serial-tracked; "
+                        "lot_external_id is not applicable" % product.display_name, 422,
                     )
 
                 expected = move.product_uom_qty
@@ -245,9 +325,56 @@ class AgriwareDispatchValidationAPI(http.Controller):
                         "Partial dispatches are not supported", 409
                     )
 
-            # Confirm and reserve through Odoo's standard workflow.
+            # Confirm through Odoo's standard workflow.
             dispatch.action_confirm()
-            dispatch.action_assign()
+            env.invalidate_all()
+
+            moves = dispatch.move_ids.filtered(
+                lambda move: move.state != "cancel"
+            )
+
+            # Phase F: pin tracked moves to the exact requested lot
+            # *before* the generic reservation pass below -- Odoo's own
+            # native _update_reserved_quantity(), which only reserves
+            # from the named lot and reports back how much it actually
+            # found, so a lot with insufficient stock is caught here
+            # rather than silently falling back to a different lot.
+            #
+            # action_confirm() above can itself auto-reserve already
+            # (confirmed directly: with only one lot in stock, Odoo
+            # reserves it immediately on confirm, before this code ever
+            # runs) -- _update_reserved_quantity()'s `need` is additive
+            # on top of whatever is already reserved, not an absolute
+            # target, so reusing it naively here would double-reserve.
+            # Clearing any existing reservation on the move first makes
+            # the outcome deterministic regardless of what Odoo's own
+            # confirm-time reservation already did.
+            for move in moves:
+                lot = resolved_lots.get(move.product_id.id)
+                if not lot:
+                    continue
+                move.move_line_ids.unlink()
+                needed = quantities[move.product_id.id]
+                taken = move._update_reserved_quantity(
+                    needed, move.location_id, lot_id=lot, strict=True,
+                )
+                if float_compare(taken, needed, precision_rounding=move.product_uom.rounding) != 0:
+                    return error_response(
+                        "Insufficient stock for lot %s" % lot.name, 409,
+                    )
+
+            # _update_reserved_quantity() above wrote move_line_ids
+            # directly; move.quantity (a stored field computed from
+            # move_line_ids.quantity) must be refreshed before
+            # _action_assign() reads it, or it would still see the
+            # pre-reservation value and reserve the same need a second
+            # time on top of the lot-pinned reservation already done.
+            env.invalidate_all()
+
+            # Already-fully-reserved (tracked) moves are recognized as
+            # such and left untouched; every other move is reserved
+            # exactly as before this phase.
+            moves._action_assign()
 
             env.invalidate_all()
 
