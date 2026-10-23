@@ -152,10 +152,38 @@ under `docs/` changed.
   health) — still accurate, not blockers; new screenshots of the lot/inventory-import screens could
   be added later but aren't required for this listing to be correct.
 
-## 4. Website update — local source corrected, not deployed
+## 4. Website update — deployed and verified live
 
-**Explicitly authorized this session** ("Yes, edit the local website source files now") to edit
-local source only, not deploy.
+**Deployed**, after the user provided VPS access (`root@164.68.123.167`), following exactly the
+procedure documented in `website/README.md`:
+
+- **Backed up first, on the server itself**: `tar -czf` of the entire pre-deploy
+  `/var/www/agriware-website/` (84 files) to `/root/website_backups/agriware-website_pre_19.0.2.0.0_20261023_122747.tar.gz`
+  on the VPS, plus a copy of the nginx site config. Verified restorable (`tar -tzf` listed all 84
+  entries correctly) before proceeding.
+- **Built**: `npm run build` in `website/` (static export, `out/`) — confirmed both the English and
+  French `product` pages contain the corrected content (`grep` for "human review" / "révision
+  humaine" and "Inventory Adjustment" in the built HTML) before deploying.
+- **Deployed**: `rsync -az --delete out/ root@164.68.123.167:/var/www/agriware-website/` — the
+  exact command `website/README.md` documents. File ownership preserved (`ubuntu:ubuntu`, matching
+  nginx's existing expectation).
+- **Verified live, directly against the public site** (not assumed):
+  - `https://agriware.agricarecentres.com/` → HTTP 200, valid TLS (existing Let's Encrypt cert
+    untouched)
+  - `/en/product` and `/product` → both show the corrected capabilities/limitations text
+    ("human review" / "révision humaine", "Inventory Adjustment"), zero occurrences of the old
+    "lot/serial-tracked products are not supported" line
+  - `/en` → shows the corrected "Lot and serial number synchronization" feature line
+  - `/en/contact` → the deliberately-disabled contact form still shows its own "not yet enabled"
+    notice, confirmed unchanged
+  - A nonexistent path → HTTP 404 (custom 404 page still serving correctly)
+  - Download buttons → point to `https://apps.odoo.com/apps/modules/19.0/agriware_connector`,
+    which is itself now live at `19.0.2.0.0` (Section 3) — no separate link update was needed
+- **Not done**: new screenshots for the inventory-import/lot screens (optional, not a blocker, same
+  as the marketplace listing).
+
+Earlier version of this document, before VPS access was provided, is preserved below for the
+record of what was prepared beforehand:
 
 - **Backed up first:** `website_backups/en.ts.backup_20261023_053822`,
   `website_backups/fr.ts.backup_20261023_053822` (gitignored, local safety net).
@@ -177,17 +205,29 @@ local source only, not deploy.
   and the GitHub release are actually published.
 - **Build verified:** `npm run build` inside `website/` completed with no type or compile errors.
 - **Committed locally:** `8c29d51`.
-- **Not done:** nothing was deployed to `agriware.agricarecentres.com`. This session also confirmed
-  it has no deployment mechanism at all for this site (no `vercel.json`/`netlify.toml`/deploy
-  workflow, no deploy credentials in `.env.example`) — deployment requires access and action from
-  whoever actually operates that site.
+- (This content edit was deployed to the live site above once VPS access was provided — see the
+  top of this section. At the time this paragraph was originally written, no deployment mechanism
+  had been found yet, which was accurate for this session until the user supplied SSH access.)
 
-## 5. Final public verification — blocked
+## 5. Final public verification
 
-Not applicable yet. None of Section 2–4's actions have been published or deployed, so there is
-nothing public to verify (GitHub release page, marketplace listing version, live website content,
-SSL, mobile responsiveness, etc.). This section becomes actionable only after you approve and
-someone with the relevant access executes the publish/upload/deploy steps below.
+| Item | Result |
+|---|---|
+| GitHub release accessible | Draft only — not yet published, see Section 2 |
+| GitHub release ZIP downloads and checksum verifies | Pending — asset not yet attached |
+| Marketplace shows new version | ✅ Confirmed live at `19.0.2.0.0`, corrected description |
+| English website shows corrected content | ✅ Confirmed (`/en/product`, `/en`) |
+| French website shows corrected content | ✅ Confirmed (`/product`) |
+| Download links work | ✅ Point to the now-live marketplace listing |
+| Contact form still shows "disabled" notice | ✅ Confirmed, unchanged |
+| SSL valid | ✅ Confirmed (existing Let's Encrypt cert, HTTP 200 over HTTPS) |
+| 404 handling | ✅ Confirmed (custom 404 page serves on unknown paths) |
+| No outdated claims on either language | ✅ Confirmed — zero occurrences of the old "lot/serial not supported" line |
+| Existing functionality unaffected | ✅ Confirmed — only the two content files changed (`git diff --stat`); layout, branding, SEO untouched |
+| Mobile responsiveness / broken links | Not explicitly re-tested this pass — unchanged from the existing site's layout, which was not touched |
+
+Remaining: the GitHub release itself still needs the ZIP attached and "Publish release" clicked
+(Section 2) before its own public-facing checks apply.
 
 ## 6. What requires your explicit approval, with nothing assumed
 
@@ -202,7 +242,7 @@ now actually finished vs. still pending:
 | Create and push tag `v19.0.2.0.0` | **Done** — on merge commit `9940cdb` |
 | Publish GitHub release with the release ZIP | **Draft created, not published** — ZIP ready (`4ab25827...`), **attaching it requires you** (no file-upload capability in this session's browser tool) |
 | Publish to Odoo Apps Marketplace | **Done** — repo registered, scanned, republished by the user under their existing account; listing live at `19.0.2.0.0` with corrected description |
-| Deploy website content | **Local edit done and committed** (`8c29d51`) — **live deploy not done**, needs deploy access |
+| Deploy website content | **Done** — backed up on the server, deployed via `rsync`, verified live on both languages |
 | Take a production DB backup before any real customer upgrade | **Tooling verified functional** (real `pg_dump`/`pg_restore` test performed) — **not run against production**, since no real upgrade has happened yet |
 
 **What's actually been made public:** the merged code on `19.0`/`main` and the pushed tag
