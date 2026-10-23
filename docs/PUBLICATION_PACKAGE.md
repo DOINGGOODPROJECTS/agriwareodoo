@@ -7,9 +7,12 @@ below require your explicit, separate approval before anyone carries them out.
 
 ## 1. Release commit and working tree
 
-Verified: `release/agriware-19.0-wms-first` @ `030b7f7`, clean working tree, package
-`agriware_connector-19.0.2.0.0.zip` (SHA-256 `e9aa1d3c29023442a5e19e87060298ffb48dfbeafa697f2f8ccf88aceaa5bd7f`)
-confirmed to match this exact commit byte-for-byte (re-verified: no drift since Step 130).
+Verified: `release/agriware-19.0-wms-first` @ `50c8951` (updated after this pass corrected the
+marketplace listing description — see Section 7a), clean working tree, package
+`agriware_connector-19.0.2.0.0.zip` (SHA-256 `a11391783611ddfd10e31cc6e74541ddc8be0ad1564a252dc791e4e4b6c24414`,
+**re-generated in this pass** after `agriware_connector/static/description/index.html` was corrected;
+this supersedes the `e9aa1d3c...` checksum recorded in Step 130/131a, which no longer matches the
+current tree) confirmed to match this exact commit byte-for-byte.
 
 ## 2. GitHub remote and branch state
 
@@ -67,8 +70,8 @@ executes this on a machine that has it, or as the equivalent through GitHub's ow
 | Property | Value |
 |---|---|
 | File | `release_artifacts/agriware_connector-19.0.2.0.0.zip` |
-| SHA-256 | `e9aa1d3c29023442a5e19e87060298ffb48dfbeafa697f2f8ccf88aceaa5bd7f` |
-| Matches commit | `030b7f7` (re-diffed `CHANGELOG.md` and the manifest version inside the zip against `git show HEAD:...` — identical) |
+| SHA-256 | `a11391783611ddfd10e31cc6e74541ddc8be0ad1564a252dc791e4e4b6c24414` |
+| Matches commit | `50c8951` (re-diffed `CHANGELOG.md` and the manifest version inside the zip against `git show HEAD:...` — identical) |
 | Archive integrity | `unzip -t`: no errors |
 
 **This ZIP is the GitHub-release artifact** (git-tracked source + docs only, per Step 130's own
@@ -94,7 +97,8 @@ applied once at packaging time instead of by every end user:
 
 ```bash
 mkdir -p /tmp/marketplace_build && cd /tmp/marketplace_build
-cp -r /home/root8401/Desktop/OdooWarehouseIntegration/agriware_connector .
+# agriware_connector/ extracted via `git ls-files agriware_connector` + per-file copy,
+# never a raw `cp -r` of the dev directory (that picks up untracked .pyc/__pycache__/.bak files)
 
 git clone https://github.com/OCA/connector.git oca-connector
 git -C oca-connector checkout cce76545ea56b85864fde9a1afb69748bc766e99
@@ -111,12 +115,15 @@ zip -rq agriware_connector-19.0.2.0.0-marketplace.zip \
 sha256sum agriware_connector-19.0.2.0.0-marketplace.zip
 ```
 
-**This was not run in this session** (it clones from the public internet into a scratch location
-outside the repository — a build step, not a verification one; Step 130 already independently
-confirmed that installing `agriware_connector` alongside these exact four modules, sourced from the
-project's existing local dev copies at the same versions, succeeds cleanly). Whoever executes the
-actual marketplace upload should run this, then install-test the resulting
-`-marketplace.zip` once more before uploading, exactly as Step 130 tested the GitHub-release zip.
+**This was actually run in this session** (`release_artifacts/agriware_connector-19.0.2.0.0-marketplace.zip`,
+SHA-256 `b54e8b5ee7d5fbe3947d263d97c4db5e50b32d1f47cdf1c20bb2a349bdb61259` — rebuilt after the
+`index.html` correction; the OCA module checkouts are unchanged from the first build). Verified in
+this pass: zero stray `.pyc`/`__pycache__`/`.bak` files in the `agriware_connector/` portion (59
+files, matching `git ls-files agriware_connector` exactly), archive integrity (`unzip -t`: no
+errors), a fresh install on an empty database (zero errors), an upgrade from the published
+`19.0.1.0.0`, and the full `agriware_connector` test suite re-run against the exact bundled
+OCA dependencies: **271 passed, 0 failed, 0 errors**. **Still not done:** uploading this package
+to the actual Odoo Apps Marketplace listing — that remains gated behind explicit approval.
 
 ## 6. GitHub release draft — `v19.0.2.0.0`
 
@@ -144,7 +151,7 @@ actual marketplace upload should run this, then install-test the resulting
 > `docs/FINAL_RELEASE_VERIFICATION.md` for the complete record.
 >
 > **Assets:** `agriware_connector-19.0.2.0.0.zip` (SHA-256:
-> `e9aa1d3c29023442a5e19e87060298ffb48dfbeafa697f2f8ccf88aceaa5bd7f`)
+> `a11391783611ddfd10e31cc6e74541ddc8be0ad1564a252dc791e4e4b6c24414`)
 
 **Not done by this session:** no tag created, no release published.
 
@@ -153,11 +160,15 @@ actual marketplace upload should run this, then install-test the resulting
 - **Package to upload:** the marketplace-specific build from Section 5 (bundling the four pinned
   OCA modules), **not** the GitHub-release ZIP.
 - **Version field:** `19.0.2.0.0`.
-- **Listing description changes:** should match the corrected capability list in
-  `docs/WEBSITE_CONTENT_CORRECTIONS.md` (product/warehouse/supplier/UOM/lot synchronization, staged
-  inventory import, receipt/dispatch synchronization, transaction status retrieval) — the current
-  published listing (version `19.0.1.0.0`) predates all of this and should not be left describing
-  only the old read-only/legacy-transaction feature set once `19.0.2.0.0` is live.
+- **Listing description changes:** **already applied in this pass.**
+  `agriware_connector/static/description/index.html` — the actual marketplace listing body, bundled
+  inside the package itself (Odoo reads this file directly for the Apps-store description; it is
+  not a separate upload step) — was corrected to describe product/warehouse/supplier/UOM/lot
+  synchronization, staged (human-reviewed) inventory import, lot-aware receipt/dispatch
+  synchronization, and transaction status retrieval, replacing the stale "lot/serial not supported"
+  claim. Static marketing text only, no functional code touched; both ZIPs were rebuilt and
+  re-checksummed afterward (Sections 4 and 5). The current *published* listing (version
+  `19.0.1.0.0`) still shows the old text until the new package is actually uploaded.
 - **Screenshots:** existing ones (`static/description/screenshot_*.png`) depict API key management,
   WMS connections, and API health — still accurate; none depict the new lot/inventory-import
   screens. Consider adding one or two new screenshots of the Inventory Imports review screen and
@@ -166,26 +177,35 @@ actual marketplace upload should run this, then install-test the resulting
   `CHANGELOG.md`.
 - **Not done by this session:** no package uploaded, no listing edited.
 
-## 8. Website content deployment instructions (prepared, not deployed)
+## 8. Website content deployment instructions
 
-For whoever has deploy access to `agriware.agricarecentres.com`'s source (the local Next.js project
-under `website/`):
+**Local source edit already applied in this pass**, with explicit authorization to edit (not
+deploy) `website/src/content/en.ts` and `website/src/content/fr.ts`. Backups of the pre-edit files
+were taken first (`website_backups/en.ts.backup_*`, `website_backups/fr.ts.backup_*`, gitignored).
+Corrected, beyond the `api.capabilities`/`limitations.items` lists originally scoped in
+`docs/WEBSITE_CONTENT_CORRECTIONS.md`: the homepage "Key Features" list and "How It Works" steps,
+and `product.operations.items`, which were found to be independently stale during this pass (see
+`docs/PUBLIC_RELEASE_REPORT.md` for the full list of sections touched). `npm run build` inside
+`website/` succeeded with no type errors after the edit. Committed locally
+(`8c29d51`, `release/agriware-19.0-wms-first`) — **not deployed**. Design, branding, layout, SEO
+`meta` fields, and all non-content code were left untouched (`git diff --stat` confirms only the
+two content files changed). Download buttons already point at the Odoo Apps Marketplace listing
+URL and the GitHub repo directly, with no version number hardcoded anywhere in the website source
+(`grep` confirmed) — so no separate "update download links" edit was needed; they will reflect the
+new version automatically once the marketplace listing and GitHub release are actually published.
 
-1. Open `website/src/content/en.ts` and `website/src/content/fr.ts`.
-2. Apply the exact replacements documented in `docs/WEBSITE_CONTENT_CORRECTIONS.md` — the
-   `api.capabilities` list and `limitations.items` list in both files, plus the new paragraph about
-   staged inventory import requiring human review.
-3. Build and preview locally (`npm run build` inside `website/`, per that project's own
-   `package.json` scripts) before deploying, to catch any formatting issue in the proposed copy.
-4. Deploy through whatever process this project already uses for `website/out/` (a static export —
+For whoever has deploy access to `agriware.agricarecentres.com`:
+
+1. Pull this branch, confirm `npm run build` still succeeds in your environment.
+2. Deploy through whatever process this project already uses for `website/out/` (a static export —
    confirmed present in this repository) — not something this session has access to or was asked
    to perform.
-5. After deployment, verify live: the corrected capability list appears, the limitations list no
-   longer claims lot/serial is unsupported, and the contact form still shows its own
-   "submission disabled" notice (confirmed in Phase H: the form is deliberately, visibly disabled,
-   not silently broken — this should not change as a side effect of the content edit).
+3. After deployment, verify live: the corrected capability/feature/limitations lists appear, and
+   the contact form still shows its own "submission disabled" notice (confirmed in Phase H: the
+   form is deliberately, visibly disabled, not silently broken — this should not change as a side
+   effect of the content edit).
 
-**Not done by this session:** the website source was not modified, nothing was built or deployed.
+**Not done by this session:** nothing was built for production or deployed to the live site.
 
 ## 9. Backup and rollback procedures — verified, not merely documented
 

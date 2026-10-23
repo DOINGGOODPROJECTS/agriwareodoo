@@ -24,16 +24,22 @@ artifact, regenerable from the tagged commit).
 
 ## 4. Package SHA-256
 
-`e9aa1d3c29023442a5e19e87060298ffb48dfbeafa697f2f8ccf88aceaa5bd7f`
+`a11391783611ddfd10e31cc6e74541ddc8be0ad1564a252dc791e4e4b6c24414` — **regenerated** in the
+Step 131 public-release pass after `agriware_connector/static/description/index.html` (the
+marketplace listing body, bundled in the package) was corrected to drop its stale "lot/serial not
+supported" claim and describe the full current capability set. This supersedes the
+`e9aa1d3c...` checksum recorded earlier in Step 130/131a, which no longer matches the current tree.
+A separate marketplace-specific package was also built and checksummed — see
+`docs/PUBLICATION_PACKAGE.md` Section 5.
 
 ## 5. Package contents
 
 Built from `git ls-files agriware_connector LICENSE README.md CHANGELOG.md docs`, read from the
-working tree (so the version-bump edit was included without requiring a commit first) — **tracked
-files only**, per the task's own explicit instruction. 92 files; diffed against the live dev
-directory and confirmed the only differences are old `.backup`/`.before_*` edit-history files that
-were never tracked by git in the first place (correctly excluded). Archive integrity verified
-(`unzip -t`: no errors).
+working tree — **tracked files only**, per the task's own explicit instruction. 95 files (grew from
+92 as of Step 130 due to documentation added since, plus the `index.html` correction); diffed
+against the live dev directory and confirmed the only differences are old `.backup`/`.before_*`
+edit-history files that were never tracked by git in the first place (correctly excluded). Archive
+integrity verified (`unzip -t`: no errors).
 
 **Deliberately not included:** `component`/`component_event`/`connector`/`queue_job` — confirmed
 these four OCA directories are not tracked by this git repository at all (explicitly `.gitignore`d
@@ -159,13 +165,17 @@ record while a new `19.0.2.0.0` entry sits at the top).
 
 ## 16. Website content readiness
 
-`docs/WEBSITE_CONTENT_CORRECTIONS.md` reviewed against the actual verified release: every claim in
-the proposed copy (product/warehouse/supplier/UOM/lot synchronization, staged inventory import
-with human review, receipt/dispatch synchronization, transaction status retrieval) matches a
-capability actually confirmed working in Sections 7–14 above — nothing proposed there claims more
-than what this verification just confirmed. The explicit "requires human review and manual
-execution in Odoo" statement for inventory adjustments is present in both the English and French
-proposed copy. **Not deployed** — the live website and its local source were not touched.
+**Applied, not deployed.** With explicit authorization, `website/src/content/en.ts` and `fr.ts`
+were corrected directly in this pass (homepage "Key Features"/"How It Works", and the product
+page's `api.capabilities`/`operations.items`/`limitations.items`), following
+`docs/WEBSITE_CONTENT_CORRECTIONS.md` and extending it to sections that document discovered as
+independently stale. Every claim added (product/warehouse/supplier/UOM/lot synchronization, staged
+inventory import with human review, receipt/dispatch synchronization, transaction status
+retrieval) matches a capability actually confirmed working in Sections 7–14 above. The explicit
+"never applied automatically... manual step in Odoo's own Inventory Adjustment screen" statement
+for inventory imports is present in both languages, in both the feature list and the limitations
+list. `npm run build` succeeded with no errors. Committed locally (`8c29d51`) — **the live site was
+not deployed**, and design/branding/layout/SEO metadata were left untouched.
 
 ## 17. Remaining limitations
 
