@@ -73,7 +73,35 @@ were verified in this pass, not assumed.
 
 ## Remaining before an actual release
 
-1. Apply the website copy corrections in `docs/WEBSITE_CONTENT_CORRECTIONS.md` (requires deploy
+1. ~~Decide and apply the actual release version number~~ — **done**: `19.0.2.0.0`, applied in
+   Step 130, re-verified in Step 131.
+2. Apply the website copy corrections in `docs/WEBSITE_CONTENT_CORRECTIONS.md` (requires deploy
    access this session does not have and was told not to use).
-2. Decide and apply the actual release version number in the manifest.
 3. Explicit approval to push/merge/publish — none of this has been done.
+
+## Step 131 publication checklist — exactly what requires your explicit approval
+
+Everything below is **prepared, not executed**. Each item requires a separate, explicit go-ahead
+from you (or whoever holds the relevant access) before anyone carries it out — see
+`docs/PUBLICATION_PACKAGE.md` for the full prepared content behind each one.
+
+- [ ] **Confirm branch protection rules** on `main`/`19.0` (this session could not query GitHub's
+  API — no `gh` CLI, no admin-scoped access). Needed before choosing Option A vs. Option B in
+  `docs/PUBLICATION_PACKAGE.md` Section 3.
+- [ ] **Push `release/agriware-19.0-wms-first`** to `origin` and open the pull request(s)
+  (or perform the direct merge, if protection rules allow it) into `19.0`, then `main`.
+- [ ] **Merge** that pull request (or direct merge) once reviewed.
+- [ ] **Create and push the Git tag** `v19.0.2.0.0`.
+- [ ] **Publish the GitHub release** using the draft title/body in
+  `docs/PUBLICATION_PACKAGE.md` Section 6, with the release ZIP attached.
+- [ ] **Build the separate marketplace package** (bundling the four pinned OCA modules — see
+  `docs/PUBLICATION_PACKAGE.md` Section 5) and **upload it** to the Odoo Apps Marketplace, updating
+  the listing's version and description.
+- [ ] **Deploy the corrected website copy** (English and French) per
+  `docs/PUBLICATION_PACKAGE.md` Section 8.
+- [ ] **Take a production database backup** immediately before any real customer upgrades to this
+  version (tooling verified present and functional in Step 131; command in
+  `docs/PUBLICATION_PACKAGE.md` Section 9).
+
+**None of the above has been done by this session.** This checklist exists so you can approve each
+step individually rather than as one bundled "yes."
