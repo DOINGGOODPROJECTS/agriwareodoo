@@ -3,3 +3,8 @@ from . import receipts
 from . import receipt_validation
 from . import dispatches
 from . import dispatch_validation
+from . import products
+from . import warehouses
+from . import suppliers
+from . import inventory_import
+from . import lots

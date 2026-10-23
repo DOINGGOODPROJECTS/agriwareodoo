@@ -133,10 +133,19 @@ product is designed (WMS-initiated, generic REST API; see
 credibility with a technical buyer; every piece of outward-facing material should repeat this
 caveat rather than bury it.
 
-**Do not advertise:** pagination, partial receipts/dispatches, lot/serial support, scheduled sync,
-or bidirectional sync — none of these exist yet (see `docs/API.md`'s Known Limitations). Any sales
-material implying otherwise would be a false claim about a currently free product that could also
-undermine trust in the paid services built on top of it.
+**Do not advertise:** pagination, partial receipts/dispatches, scheduled sync, or bidirectional sync
+— none of these exist (see `docs/API.md`'s Known Limitations). Any sales material implying
+otherwise would be a false claim about a currently free product that could also undermine trust in
+the paid services built on top of it.
+
+**Correction, Phase F:** lot/serial support **does** now exist — product/warehouse/supplier/UOM
+synchronization, lot/serial tracking, staged inventory import, and receipt/dispatch
+synchronization (including lot-aware receipts/dispatches) are all implemented and tested as of
+Phases A–G. This list, and the website copy it was describing, predate that work. **Verify every
+claim against `docs/API_ROADMAP.md`'s Development Roadmap section before publishing or updating
+any outward-facing material** — each phase there is explicitly marked "Implemented" or "Proposed —
+not implemented," so this strategy document never has to be the single source of truth for what's
+actually shipped.
 
 ## 4. Revenue Model
 

@@ -298,9 +298,13 @@ project [README](../README.md#free-software-and-paid-services).
   within their allowed companies — there is no way to restrict one integration identity to a
   specific warehouse subset.
 - Partial receipts and partial dispatches are not supported; quantities must match exactly.
-- Lot/serial-tracked products are not supported: both receipt and dispatch validation reject them
-  consistently with `409` (`"Lot or serial tracking is not supported yet"`). Assigning lot/serial
-  numbers through this API is not implemented at all — only the rejection is.
+- **Lot/serial-tracked products are supported as of Phase F.** `POST`/`GET`/`PATCH
+  /agriware/api/v1/lots` creates and resolves native `stock.lot` records, and both receipt and
+  dispatch validation accept an optional `lot_external_id` per line — see
+  [LOT_BATCH_SYNCHRONIZATION.md](LOT_BATCH_SYNCHRONIZATION.md) for the full reference. A tracked
+  product with **no** `lot_external_id` on its line is still rejected with `409`
+  (`"Lot or serial tracking is not supported yet"`) — that message is historical wording for an
+  unchanged case, not evidence the feature is missing.
 - Multiple move lines for the same product on one receipt are not supported.
 - No automatic or scheduled synchronization: every request is initiated by the external WMS; there
   is no polling, cron job, or background task in this module.
@@ -474,10 +478,12 @@ Confirms a draft receipt and records received quantities, then validates it in O
 | `received_quantities` | array | Required, 1–100 entries, no duplicate `product_id` |
 | `received_quantities[].product_id` | integer | Required, > 0 |
 | `received_quantities[].quantity` | number | Required, finite, `0 < quantity <= 1,000,000,000` |
+| `received_quantities[].lot_external_id` | string | Optional (Phase F). Required if the product is lot/serial-tracked — resolved via the same external-ID mapping as `POST /lots`. |
 
 The set of products in `received_quantities` must exactly match the receipt's move lines, and each
-quantity must exactly match the expected quantity (partial receipts are not yet supported).
-Lot/serial-tracked products are not supported and are rejected with `409`.
+quantity must exactly match the expected quantity (partial receipts are not yet supported). A
+lot/serial-tracked product line is accepted when it names the exact lot via `lot_external_id`
+(Phase F); a tracked product with no `lot_external_id` is rejected with `409`.
 
 **Response 200**
 ```json
@@ -496,8 +502,9 @@ Lot/serial-tracked products are not supported and are rejected with `409`.
 |---|---|
 | 400 | Invalid JSON / invalid fields / receipt has no active lines / products don't match receipt |
 | 403 | Not authorized / insufficient rights / `external_reference` lacks the `AGRIWARE-RCPT-` prefix |
-| 404 | Receipt not found (or not an incoming operation in the caller's companies) |
-| 409 | `external_reference` mismatch, receipt already validated/cancelled/not in draft, quantity mismatch, lot/serial tracking present, or Odoo rejects the validation |
+| 404 | Receipt not found (or not an incoming operation in the caller's companies); or unknown `lot_external_id` |
+| 409 | `external_reference` mismatch, receipt already validated/cancelled/not in draft, quantity mismatch, tracked product with no `lot_external_id`, or Odoo rejects the validation |
+| 422 | `lot_external_id` resolves to a lot belonging to a different product |
 | 500 | Unexpected failure (transaction rolled back) |
 
 The receipt row is locked (`SELECT ... FOR UPDATE NOWAIT`) for the duration of validation, so two
@@ -571,9 +578,11 @@ Confirms a draft dispatch, reserves stock, records picked quantities, and valida
 | `dispatched_quantities` | array | Required, 1–100 entries, no duplicate `product_id` |
 | `dispatched_quantities[].product_id` | integer | Required, > 0 |
 | `dispatched_quantities[].quantity` | number | Required, finite, `0 < quantity <= 1,000,000,000` |
+| `dispatched_quantities[].lot_external_id` | string | Optional (Phase F). Required if the product is lot/serial-tracked. The named lot is reserved specifically — never a different lot of the same product, even if Odoo's own removal strategy would otherwise have picked one. |
 
-Constraints: exact quantity match only (no partial dispatch), lot/serial-tracked products are not
-supported, and the dispatch must be fully reserved before Odoo will validate it.
+Constraints: exact quantity match only (no partial dispatch); a lot/serial-tracked product line is
+accepted when it names the exact lot via `lot_external_id` (Phase F), otherwise rejected; the
+dispatch must be fully reserved before Odoo will validate it.
 
 **Response 200**
 ```json
@@ -592,6 +601,7 @@ supported, and the dispatch must be fully reserved before Odoo will validate it.
 |---|---|
 | 400 | Invalid JSON / invalid fields / no active move lines |
 | 403 | Not authorized / insufficient rights / `external_reference` lacks the `AGRIWARE-DISP-` prefix |
-| 404 | Dispatch not found (or not an outgoing operation in the caller's companies) |
-| 409 | Lock unavailable (concurrent validation in progress), reference mismatch, state mismatch, product/quantity mismatch, lot/serial tracking present, insufficient reserved stock, or Odoo rejects the validation |
+| 404 | Dispatch not found (or not an outgoing operation in the caller's companies); or unknown `lot_external_id` |
+| 409 | Lock unavailable (concurrent validation in progress), reference mismatch, state mismatch, product/quantity mismatch, tracked product with no `lot_external_id`, insufficient stock in the named lot, or Odoo rejects the validation |
+| 422 | `lot_external_id` resolves to a lot belonging to a different product |
 | 500 | Unexpected failure (transaction rolled back) |

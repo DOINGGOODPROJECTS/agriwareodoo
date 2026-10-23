@@ -1,7 +1,8 @@
 # icon.png — design brief
 
-Not yet created. This is a design asset, not something to generate programmatically or
-placeholder-fill — commission it from a designer or source original artwork.
+**Status: created.** `icon.png` exists in this folder (1024×1024 PNG, matching the spec below) and
+is picked up automatically by Odoo and the Apps Store. This brief is kept for reference — e.g. if
+the icon is ever revised — not as an outstanding task.
 
 | Requirement | Spec |
 |---|---|
